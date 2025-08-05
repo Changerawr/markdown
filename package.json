@@ -1,0 +1,97 @@
+{
+  "name": "@changerawr/markdown",
+  "version": "1.0.0",
+  "description": "Powerful markdown renderer with custom extensions for Changerawr - supports HTML, Tailwind CSS, and JSON outputs",
+  "keywords": [
+    "markdown",
+    "parser",
+    "renderer",
+    "react",
+    "tailwind",
+    "extensions",
+    "changerawr",
+    "cum"
+  ],
+  "author": "Changerawr Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/changerawr/markdown.git"
+  },
+  "homepage": "https://github.com/changerawr/markdown#readme",
+  "bugs": {
+    "url": "https://github.com/changerawr/markdown/issues"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react/index.mjs",
+      "require": "./dist/react/index.js",
+      "types": "./dist/react/index.d.ts"
+    },
+    "./standalone": {
+      "import": "./dist/standalone.mjs",
+      "require": "./dist/standalone.js",
+      "types": "./dist/standalone.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run build"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@testing-library/react": "^16.3.0",
+    "dompurify": "^3.0.8"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/node": "^20.11.16",
+    "@types/react": "^18.2.52",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^8.56.0",
+    "jsdom": "^24.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4"
+  }
+}
