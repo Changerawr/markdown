@@ -8,18 +8,11 @@
 import { ChangerawrMarkdown, parseMarkdown, renderMarkdown } from './engine';
 import { AlertExtension, ButtonExtension, EmbedExtension } from './extensions';
 import { renderToHTML } from './outputs/html';
+import {renderToAST, renderToJSON } from './outputs/json';
 import { renderToTailwind } from './outputs/tailwind';
-import { renderToJSON, renderToAST } from './outputs/json';
-import type { EngineConfig, Extension } from './types';
-import {
-    escapeHtml,
-    generateId,
-    sanitizeHtml,
-    extractDomain,
-    parseOptions,
-    PerformanceTimer,
-    Logger
-} from './utils';
+import {parseCum, renderCum } from './standalone';
+import { EngineConfig, Extension } from './types';
+import { escapeHtml, extractDomain, generateId, Logger, parseOptions, PerformanceTimer, sanitizeHtml } from './utils';
 
 // ========================================
 // CORE ENGINE AND CLASSES
@@ -103,13 +96,33 @@ export {
 export {
     renderToTailwind,
     renderToTailwindWithClasses,
-    renderToTailwindWithConfig
+    renderToTailwindWithConfig,
+    defaultTailwindClasses,
+    proseClasses,
+    minimalClasses
 } from './outputs/tailwind';
 
 // JSON Output
 export {
     renderToJSON,
-    renderToAST
+    renderToAST,
+    tokensToAST,
+    astToTokens,
+    tokensToJSONString,
+    astToJSONString,
+    parseTokensFromJSON,
+    parseASTFromJSON,
+    getTokenStats,
+    getASTStats,
+    compareTokens
+} from './outputs/json';
+
+// JSON Output Types
+export type {
+    TokenStatistics,
+    ASTStatistics,
+    TokenDifference,
+    TokenComparison
 } from './outputs/json';
 
 // ========================================
@@ -121,11 +134,47 @@ export {
     escapeHtml,
     generateId,
     sanitizeHtml,
+    basicSanitize
+} from './utils';
+
+// Environment detection
+export {
+    isBrowser,
+    isNode
+} from './utils';
+
+// Functional utilities
+export {
+    debounce,
+    deepMerge,
+    parseOptions
+} from './utils';
+
+// URL utilities
+export {
     extractDomain,
-    parseOptions,
+    isValidUrl
+} from './utils';
+
+// Debug and performance utilities
+export {
     PerformanceTimer,
     Logger
 } from './utils';
+
+// ========================================
+// STANDALONE SUPPORT
+// ========================================
+
+// Vanilla JS functions (no React dependency)
+export {
+    renderCum,
+    parseCum,
+    createCumEngine,
+    renderCumToHtml,
+    renderCumToTailwind,
+    renderCumToJson
+} from './standalone';
 
 // ========================================
 // CONVENIENCE FACTORY FUNCTIONS
@@ -147,7 +196,8 @@ export function createHTMLEngine(config?: Omit<EngineConfig, 'renderer'>): Chang
         renderer: {
             format: 'html',
             sanitize: true,
-            allowUnsafeHtml: false
+            allowUnsafeHtml: false,
+            ...config?.parser
         }
     });
 }
@@ -161,7 +211,8 @@ export function createTailwindEngine(config?: Omit<EngineConfig, 'renderer'>): C
         renderer: {
             format: 'tailwind',
             sanitize: true,
-            allowUnsafeHtml: false
+            allowUnsafeHtml: false,
+            ...config?.parser
         }
     });
 }
@@ -245,6 +296,10 @@ export const markdown = {
     createMinimalEngine,
     createCustomEngine,
 
+    // Standalone functions
+    renderCum,
+    parseCum,
+
     // Main class
     ChangerawrMarkdown,
 
@@ -276,3 +331,86 @@ export const markdown = {
  * Usage: import markdown from '@changerawr/markdown'
  */
 export default markdown;
+
+// ========================================
+// PRESET CONFIGURATIONS
+// ========================================
+
+/**
+ * Preset configurations for common use cases
+ */
+export const presets = {
+    /**
+     * Blog/article preset with prose-friendly styling
+     */
+    blog: {
+        renderer: {
+            format: 'tailwind' as const,
+            customClasses: {
+                'heading-1': 'text-4xl font-bold tracking-tight mt-10 mb-6',
+                'heading-2': 'text-3xl font-semibold tracking-tight mt-8 mb-4',
+                'heading-3': 'text-2xl font-medium tracking-tight mt-6 mb-3',
+                'paragraph': 'text-lg leading-8 mb-6',
+                'blockquote': 'border-l-4 border-gray-300 pl-6 py-2 italic text-gray-700 my-6',
+                'code-inline': 'bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono',
+                'code-block': 'bg-gray-900 text-gray-100 p-6 rounded-lg overflow-x-auto my-6 text-sm'
+            }
+        }
+    },
+
+    /**
+     * Documentation preset with clean, technical styling
+     */
+    docs: {
+        renderer: {
+            format: 'tailwind' as const,
+            customClasses: {
+                'heading-1': 'text-3xl font-bold border-b border-gray-200 pb-2 mb-6',
+                'heading-2': 'text-2xl font-semibold mt-8 mb-4',
+                'heading-3': 'text-xl font-medium mt-6 mb-3',
+                'paragraph': 'leading-7 mb-4',
+                'code-inline': 'bg-blue-50 text-blue-800 px-2 py-1 rounded text-sm font-mono',
+                'code-block': 'bg-gray-50 border border-gray-200 p-4 rounded-lg overflow-x-auto my-4 text-sm',
+                'alert': 'border border-blue-200 bg-blue-50 text-blue-800 p-4 rounded-lg mb-4'
+            }
+        }
+    },
+
+    /**
+     * Minimal preset with basic styling
+     */
+    minimal: {
+        renderer: {
+            format: 'html' as const,
+            sanitize: true
+        }
+    },
+
+    /**
+     * Performance preset with minimal processing
+     */
+    fast: {
+        parser: {
+            validateMarkdown: false,
+            maxIterations: 1000
+        },
+        renderer: {
+            format: 'html' as const,
+            sanitize: false
+        }
+    }
+} as const;
+
+/**
+ * Create engine with preset configuration
+ */
+export function createEngineWithPreset(
+    presetName: keyof typeof presets,
+    additionalConfig?: EngineConfig
+): ChangerawrMarkdown {
+    const preset = presets[presetName];
+    return new ChangerawrMarkdown({
+        ...preset,
+        ...additionalConfig
+    });
+}
