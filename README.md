@@ -299,7 +299,7 @@ const minimalEngine = createMinimalEngine();
 Perfect for Node.js, vanilla JavaScript, or any non-React environment:
 
 ```html
-<script src="https://unpkg.com/@changerawr/markdown/dist/standalone.js"></script>
+<script src="https://unpkg.com/@changerawr/markdown/dist/standalone.browser.js"></script>
 <script>
   const html = ChangerawrMarkdown.renderCum('# Hello World!');
   document.body.innerHTML = html;
