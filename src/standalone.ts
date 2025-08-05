@@ -40,8 +40,16 @@ export function renderCumToJson(markdown: string): MarkdownToken[] {
     return parseCum(markdown);
 }
 
-// Create the global API object
-const globalAPI = {
+// Export for Node.js/module usage
+export {
+    ChangerawrMarkdown,
+    type MarkdownToken,
+    type Extension,
+    type EngineConfig
+};
+
+// Default export - this is what tsup will assign to the global
+export default {
     renderCum,
     parseCum,
     createCumEngine,
@@ -54,24 +62,3 @@ const globalAPI = {
     // Include the main class
     ChangerawrMarkdown
 };
-
-// Export for Node.js/module usage
-export {
-    ChangerawrMarkdown,
-    type MarkdownToken,
-    type Extension,
-    type EngineConfig
-};
-
-// Default export for easier imports
-export default globalAPI;
-
-// Browser global assignment (will be executed when the script loads)
-if (typeof window !== 'undefined') {
-    (window as any).ChangerawrMarkdown = globalAPI;
-}
-
-// Also assign to global scope for different environments
-if (typeof globalThis !== 'undefined') {
-    (globalThis as any).ChangerawrMarkdown = globalAPI;
-}
