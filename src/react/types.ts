@@ -1,5 +1,17 @@
-import type { ReactNode } from 'react';
-import type { EngineConfig, MarkdownToken, OutputFormat, Extension, DebugInfo, PerformanceMetrics } from '../types';
+import React, { ReactNode } from 'react';
+import {DebugInfo, EngineConfig, Extension, MarkdownToken, OutputFormat, PerformanceMetrics } from '../types';
+
+// Re-export core types from the main types file
+export type {
+    MarkdownToken,
+    Extension,
+    OutputFormat,
+    EngineConfig,
+    RendererConfig,
+    ParserConfig,
+    DebugInfo,
+    PerformanceMetrics
+} from '../types';
 
 /**
  * Props for the MarkdownRenderer component
@@ -109,10 +121,10 @@ export interface MarkdownEngineHookOptions {
 }
 
 /**
- * Debug information for React components
+ * Debug information for React components - extends the core DebugInfo
  */
 export interface MarkdownDebugInfo {
-    /** Core debug info */
+    /** Core debug info from engine */
     core: DebugInfo | null;
 
     /** Performance metrics */

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changerawr Markdown - Basic Example</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .markdown-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .editor {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div class="container mx-auto py-8">
+    <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">Changerawr Markdown Demo</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Editor -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Markdown Input</h2>
+            <textarea
+                    id="markdown-input"
+                    class="editor w-full h-96 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Type your markdown here..."># Welcome to Changerawr Markdown!
+
+This is a **powerful** markdown renderer with custom extensions.
+
+## Features
+
+- ✅ Standard markdown support
+- ✅ Custom alert boxes
+- ✅ Interactive buttons
+- ✅ Media embeds
+
+:::info Pro Tip
+You can create beautiful alert boxes like this one!
+:::
+
+:::warning Watch Out
+Don't forget to save your work regularly.
+:::
+
+### Try Some Code
+
+```javascript
+const markdown = new ChangerawrMarkdown();
+const html = markdown.toHtml('# Hello World!');
+console.log(html);
+```
+
+Want to learn more? [button:Visit Our Docs](https://github.com/changerawr/markdown){primary,lg}
+
+---
+
+**Happy writing!** 🚀</textarea>
+        </div>
+
+        <!-- Preview -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Live Preview</h2>
+            <div id="markdown-output" class="markdown-content h-96 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                <!-- Rendered markdown will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-8">
+        <p class="text-gray-600">
+            Powered by <a href="https://github.com/changerawr/markdown" class="text-blue-600 hover:underline">@changerawr/markdown</a>
+        </p>
+    </div>
+</div>
+
+<!-- Include the standalone library -->
+<script src="https://unpkg.com/@changerawr/markdown/dist/standalone.js"></script>
+
+<script>
+    const input = document.getElementById('markdown-input');
+    const output = document.getElementById('markdown-output');
+
+    function updatePreview() {
+        const markdown = input.value;
+
+        try {
+            // Use the global ChangerawrMarkdown from the standalone build
+            const html = ChangerawrMarkdown.renderCum(markdown);
+            output.innerHTML = html;
+        } catch (error) {
+            output.innerHTML = `<div class="text-red-600">Error: ${error.message}</div>`;
+        }
+    }
+
+    // Update preview on input
+    input.addEventListener('input', updatePreview);
+
+    // Initial render
+    updatePreview();
+</script>
+</body>
+</html>

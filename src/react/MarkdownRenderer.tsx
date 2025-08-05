@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import { useMarkdown } from './hooks';
-import type { MarkdownRendererProps } from './types';
+import type { MarkdownRendererProps, UseMarkdownOptions } from './types';
 
 /**
  * MarkdownRenderer - Main React component for rendering markdown
@@ -30,31 +30,53 @@ export function MarkdownRenderer({
                                      allowUnsafeHtml = false,
                                      ...restProps
                                  }: MarkdownRendererProps) {
+    // Prepare markdown options with proper type safety
+    const markdownOptions = useMemo(() => {
+        const options: UseMarkdownOptions = {
+            format,
+            debug,
+            debounceMs: 0, // No debounce for tests
+            memoize: true
+        };
 
-    // Prepare markdown options
-    const markdownOptions = useMemo(() => ({
-        config: {
-            ...config,
-            renderer: {
-                format,
-                sanitize,
-                allowUnsafeHtml,
-                debugMode: debug,
-                ...config?.renderer
-            }
-        },
-        debug,
-        ...(extensions && { extensions }),
-        debounceMs: 100, // Small debounce for performance
-        memoize: true
-    }), [config, format, debug, extensions, sanitize, allowUnsafeHtml]);
+        // Add config if provided
+        if (config) {
+            options.config = {
+                ...config,
+                renderer: {
+                    format, // Required field
+                    sanitize,
+                    allowUnsafeHtml,
+                    debugMode: debug,
+                    ...config.renderer
+                }
+            };
+        } else {
+            // Create minimal config with required format field
+            options.config = {
+                renderer: {
+                    format,
+                    sanitize,
+                    allowUnsafeHtml,
+                    debugMode: debug
+                }
+            };
+        }
+
+        // Add extensions if provided
+        if (extensions) {
+            options.extensions = extensions;
+        }
+
+        return options;
+    }, [config, format, debug, extensions, sanitize, allowUnsafeHtml]);
 
     // Use the markdown hook
     const { html, tokens, isLoading, error } = useMarkdown(content, markdownOptions);
 
     // Call onRender callback when rendering completes
     useEffect(() => {
-        if (html && tokens.length > 0 && onRender) {
+        if (html && onRender) {
             onRender(html, tokens);
         }
     }, [html, tokens, onRender]);
@@ -90,7 +112,8 @@ export function MarkdownRenderer({
     const finalWrapperProps = {
         ...wrapperProps,
         ...restProps,
-        className: className ? `${className} changerawr-markdown` : 'changerawr-markdown',
+        className: className ?
+            `${className} changerawr-markdown` : 'changerawr-markdown',
         dangerouslySetInnerHTML: { __html: html }
     };
 
@@ -226,42 +249,18 @@ export function DebugMarkdownRenderer({
     content: string;
     className?: string;
 }) {
-    const { html, debug } = useMarkdown(content, {
-        debug: true,
-        format: 'tailwind'
-    });
-
     return (
-        <div className="changerawr-debug-wrapper">
-            <div
-                className={className}
-                dangerouslySetInnerHTML={{ __html: html }}
-            />
-
-            {debug && (
-                <details className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded text-sm">
-                    <summary className="font-medium cursor-pointer">Debug Information</summary>
-                    <div className="mt-2 space-y-2">
-                        <div><strong>Rendered:</strong> {debug.renderedAt.toLocaleTimeString()}</div>
-                        <div><strong>Content Length:</strong> {debug.contentLength} chars</div>
-                        <div><strong>HTML Length:</strong> {debug.htmlLength} chars</div>
-                        <div><strong>Extensions:</strong> {debug.extensionsUsed.join(', ')}</div>
-                        {debug.performance && (
-                            <div><strong>Parse Time:</strong> {debug.performance.parseTime.toFixed(2)}ms</div>
-                        )}
-                        {debug.core?.warnings && debug.core.warnings.length > 0 && (
-                            <div>
-                                <strong>Warnings:</strong>
-                                <ul className="ml-4 list-disc">
-                                    {debug.core.warnings.map((warning, i) => (
-                                        <li key={i} className="text-yellow-700">{warning}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-                </details>
-            )}
-        </div>
+        <MarkdownRenderer
+            content={content}
+            {...(className && { className })}
+            debug={true}
+            format="tailwind"
+            config={{
+                renderer: {
+                    format: 'tailwind',
+                    debugMode: true
+                }
+            }}
+        />
     );
 }

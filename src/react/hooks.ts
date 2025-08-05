@@ -1,11 +1,13 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { ChangerawrMarkdown } from '../engine';
-import { debounce } from '../utils';
 import type {
     UseMarkdownOptions,
     UseMarkdownResult,
     MarkdownEngineHookOptions,
-    MarkdownDebugInfo
+    MarkdownDebugInfo,
+    EngineConfig,
+    RendererConfig,
+    OutputFormat
 } from './types';
 import type { MarkdownToken } from '../types';
 
@@ -24,64 +26,61 @@ export function useMarkdown(
     const [debug, setDebug] = useState<MarkdownDebugInfo | null>(null);
 
     const engineRef = useRef<ChangerawrMarkdown | null>(null);
-    const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Create engine instance
+    // Create engine instance with proper type safety - recreate when format changes
     const engine = useMemo(() => {
-        if (!engineRef.current) {
-            const newEngine = new ChangerawrMarkdown({
-                ...options.config,
-                renderer: {
-                    format: options.format || 'tailwind',
-                    debugMode: options.debug,
-                    ...options.config?.renderer
-                }
+        // Always recreate engine when dependencies change
+        const format: OutputFormat = options.format ?? 'tailwind';
+        const rendererConfig: RendererConfig = {
+            format,
+            ...(options.config?.renderer && {
+                sanitize: options.config.renderer.sanitize,
+                allowUnsafeHtml: options.config.renderer.allowUnsafeHtml,
+                customClasses: options.config.renderer.customClasses,
+                debugMode: options.debug ?? options.config.renderer.debugMode ?? false
+            })
+        };
+
+        // Build full engine config
+        const engineConfig: EngineConfig = {
+            ...(options.config && {
+                parser: options.config.parser,
+                extensions: options.config.extensions
+            }),
+            renderer: rendererConfig
+        };
+
+        const newEngine = new ChangerawrMarkdown(engineConfig);
+
+        // Register custom extensions if provided
+        if (options.extensions) {
+            options.extensions.forEach(extension => {
+                newEngine.registerExtension(extension);
             });
-
-            // Register custom extensions if provided
-            if (options.extensions) {
-                options.extensions.forEach(extension => {
-                    newEngine.registerExtension(extension);
-                });
-            }
-
-            engineRef.current = newEngine;
         }
-        return engineRef.current;
+
+        engineRef.current = newEngine;
+        return newEngine;
     }, [options.config, options.format, options.debug, options.extensions]);
 
     // Process markdown content
-    const processMarkdown = useCallback(async (markdownContent: string) => {
+    const processMarkdown = useCallback((markdownContent: string) => {
         if (!markdownContent.trim()) {
             setHtml('');
             setTokens([]);
             setError(null);
             setDebug(null);
+            setIsLoading(false);
             return;
         }
 
-        // Cancel previous processing
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-
-        abortControllerRef.current = new AbortController();
         setIsLoading(true);
         setError(null);
 
         try {
-            const startTime = performance.now();
-
-            // Parse and render
+            // Parse and render using the actual engine methods
             const parsedTokens = engine.parse(markdownContent);
             const renderedHtml = engine.render(parsedTokens);
-
-            const endTime = performance.now();
-
-            // Check if operation was aborted
-            if (abortControllerRef.current.signal.aborted) {
-                return;
-            }
 
             setHtml(renderedHtml);
             setTokens(parsedTokens);
@@ -102,34 +101,22 @@ export function useMarkdown(
             }
 
         } catch (err) {
-            if (!abortControllerRef.current?.signal.aborted) {
-                const errorObj = err instanceof Error ? err : new Error(String(err));
-                setError(errorObj);
-            }
+            const errorObj = err instanceof Error ? err : new Error(String(err));
+            setError(errorObj);
         } finally {
             setIsLoading(false);
         }
     }, [engine, options.debug]);
 
-    // Debounced process function
-    const debouncedProcess = useMemo(() => {
-        const delay = options.debounceMs || 0;
-        return delay > 0 ? debounce(processMarkdown, delay) : processMarkdown;
-    }, [processMarkdown, options.debounceMs]);
-
     // Process content when it changes
     useEffect(() => {
-        debouncedProcess(content);
-    }, [content, debouncedProcess]);
+        processMarkdown(content);
+    }, [content, processMarkdown]);
 
-    // Cleanup on unmount
+    // Update content when initialContent changes
     useEffect(() => {
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
-    }, []);
+        setContent(initialContent);
+    }, [initialContent]);
 
     const render = useCallback((newContent: string) => {
         setContent(newContent);
@@ -161,18 +148,27 @@ export function useMarkdownEngine(options: MarkdownEngineHookOptions = {}) {
     const engineRef = useRef<ChangerawrMarkdown | null>(null);
 
     const engine = useMemo(() => {
-        if (!engineRef.current) {
-            engineRef.current = new ChangerawrMarkdown(options.config);
+        // Always recreate engine when dependencies change
+        const engineConfig: EngineConfig = {
+            ...options.config,
+            renderer: {
+                format: 'tailwind', // Required field
+                ...options.config?.renderer
+            }
+        };
+
+        // Handle auto-register extensions option
+        if (options.autoRegisterExtensions === false) {
+            engineConfig.extensions = [];
         }
-        return engineRef.current;
-    }, [options.config]);
 
-    const registerExtension = useCallback((extension: Parameters<ChangerawrMarkdown['registerExtension']>[0]) => {
-        return engine.registerExtension(extension);
-    }, [engine]);
+        const newEngine = new ChangerawrMarkdown(engineConfig);
+        engineRef.current = newEngine;
+        return newEngine;
+    }, [options.config, options.autoRegisterExtensions]);
 
-    const unregisterExtension = useCallback((name: string) => {
-        return engine.unregisterExtension(name);
+    const toHtml = useCallback((content: string) => {
+        return engine.toHtml(content);
     }, [engine]);
 
     const parse = useCallback((content: string) => {
@@ -183,10 +179,6 @@ export function useMarkdownEngine(options: MarkdownEngineHookOptions = {}) {
         return engine.render(tokens);
     }, [engine]);
 
-    const toHtml = useCallback((content: string) => {
-        return engine.toHtml(content);
-    }, [engine]);
-
     const getExtensions = useCallback(() => {
         return engine.getExtensions();
     }, [engine]);
@@ -195,50 +187,55 @@ export function useMarkdownEngine(options: MarkdownEngineHookOptions = {}) {
         return engine.hasExtension(name);
     }, [engine]);
 
+    const registerExtension = useCallback((extension: Parameters<ChangerawrMarkdown['registerExtension']>[0]) => {
+        return engine.registerExtension(extension);
+    }, [engine]);
+
+    const unregisterExtension = useCallback((name: string) => {
+        return engine.unregisterExtension(name);
+    }, [engine]);
+
     const getWarnings = useCallback(() => {
         return engine.getWarnings();
     }, [engine]);
 
+    const getDebugInfo = useCallback(() => {
+        return engine.getDebugInfo();
+    }, [engine]);
+
+    const getPerformanceMetrics = useCallback(() => {
+        return engine.getPerformanceMetrics();
+    }, [engine]);
+
     return {
         engine,
-        registerExtension,
-        unregisterExtension,
+        toHtml,
         parse,
         render,
-        toHtml,
         getExtensions,
         hasExtension,
-        getWarnings
+        registerExtension,
+        unregisterExtension,
+        getWarnings,
+        getDebugInfo,
+        getPerformanceMetrics
     };
 }
 
 /**
- * Hook for debug information and performance monitoring
+ * Debug hook for markdown processing
  */
-export function useMarkdownDebug(engine: ChangerawrMarkdown) {
-    const [debugInfo, setDebugInfo] = useState<MarkdownDebugInfo | null>(null);
-
-    const updateDebugInfo = useCallback(() => {
-        const coreDebug = engine.getDebugInfo();
-        const performanceMetrics = engine.getPerformanceMetrics();
-
-        setDebugInfo({
-            core: coreDebug,
-            performance: performanceMetrics,
-            renderedAt: new Date(),
-            contentLength: 0, // Will be updated by caller
-            htmlLength: 0,    // Will be updated by caller
-            extensionsUsed: engine.getExtensions()
-        });
-    }, [engine]);
-
-    const clearDebugInfo = useCallback(() => {
-        setDebugInfo(null);
-    }, []);
+export function useMarkdownDebug(content: string) {
+    const { html, tokens, debug } = useMarkdown(content, { debug: true });
 
     return {
-        debugInfo,
-        updateDebugInfo,
-        clearDebugInfo
+        html,
+        tokens,
+        debug,
+        stats: {
+            tokenCount: tokens.length,
+            htmlLength: html.length,
+            contentLength: content.length
+        }
     };
 }
