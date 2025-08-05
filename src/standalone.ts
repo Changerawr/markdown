@@ -3,7 +3,7 @@
  * No React dependencies - works in browser and Node.js environments
  */
 
-import { ChangerawrMarkdown, parseMarkdown, renderMarkdown } from './engine';
+import { ChangerawrMarkdown } from './engine';
 import type { MarkdownToken, Extension, EngineConfig } from './types';
 
 // Main renderCum function for vanilla JS usage
@@ -40,41 +40,38 @@ export function renderCumToJson(markdown: string): MarkdownToken[] {
     return parseCum(markdown);
 }
 
-// Global API for browser usage
-if (typeof window !== 'undefined') {
-    // Browser environment - attach to window
-    (window as any).ChangerawrMarkdown = {
-        renderCum,
-        parseCum,
-        createCumEngine,
-        renderCumToHtml,
-        renderCumToTailwind,
-        renderCumToJson,
-        // Legacy aliases
-        render: renderCum,
-        parse: parseCum
-    };
-}
-
-// Node.js environment exports
-export {
-    ChangerawrMarkdown,
-    parseMarkdown,
-    renderMarkdown,
-    type MarkdownToken,
-    type Extension,
-    type EngineConfig
-};
-
-// Default export for easier imports
-export default {
+// Create the global API object
+const globalAPI = {
     renderCum,
     parseCum,
     createCumEngine,
     renderCumToHtml,
     renderCumToTailwind,
     renderCumToJson,
-    ChangerawrMarkdown,
-    parseMarkdown,
-    renderMarkdown
+    // Legacy aliases
+    render: renderCum,
+    parse: parseCum,
+    // Include the main class
+    ChangerawrMarkdown
 };
+
+// Export for Node.js/module usage
+export {
+    ChangerawrMarkdown,
+    type MarkdownToken,
+    type Extension,
+    type EngineConfig
+};
+
+// Default export for easier imports
+export default globalAPI;
+
+// Browser global assignment (will be executed when the script loads)
+if (typeof window !== 'undefined') {
+    (window as any).ChangerawrMarkdown = globalAPI;
+}
+
+// Also assign to global scope for different environments
+if (typeof globalThis !== 'undefined') {
+    (globalThis as any).ChangerawrMarkdown = globalAPI;
+}

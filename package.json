@@ -1,6 +1,9 @@
 {
   "name": "@changerawr/markdown",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Powerful markdown renderer with custom extensions for Changerawr - supports HTML, Tailwind CSS, and JSON outputs",
   "keywords": [
     "markdown",
@@ -27,24 +30,24 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     },
     "./react": {
+      "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.mjs",
-      "require": "./dist/react/index.js",
-      "types": "./dist/react/index.d.ts"
+      "require": "./dist/react/index.js"
     },
     "./tailwind": {
+      "types": "./dist/tailwind/index.d.ts",
       "import": "./dist/tailwind/index.mjs",
-      "require": "./dist/tailwind/index.js",
-      "types": "./dist/tailwind/index.d.ts"
+      "require": "./dist/tailwind/index.js"
     },
     "./standalone": {
+      "types": "./dist/standalone.d.ts",
       "import": "./dist/standalone.mjs",
-      "require": "./dist/standalone.js",
-      "types": "./dist/standalone.d.ts"
+      "require": "./dist/standalone.js"
     }
   },
   "files": [

@@ -8,7 +8,7 @@ export default defineConfig([
         dts: true,
         clean: true,
         sourcemap: true,
-        external: ['react', 'react-dom'],
+        external: ['react', 'react-dom', 'dompurify'],
         esbuildOptions: (options) => {
             options.banner = {
                 js: '"use client";',
@@ -22,25 +22,48 @@ export default defineConfig([
         format: ['cjs', 'esm'],
         dts: true,
         sourcemap: true,
-        external: ['react', 'react-dom'],
+        external: ['react', 'react-dom', 'dompurify'],
         esbuildOptions: (options) => {
             options.banner = {
                 js: '"use client";',
             };
         },
     },
-    // Standalone bundle (no React dependency)
+    // Tailwind plugin bundle
     {
-        entry: ['src/standalone.ts'],
-        format: ['cjs', 'esm', 'iife'],
+        entry: ['src/tailwind/index.ts'],
+        outDir: 'dist/tailwind',
+        format: ['cjs', 'esm'],
         dts: true,
         sourcemap: true,
-        globalName: 'ChangerawrMarkdown',
+        external: ['tailwindcss'],
+    },
+    // Standalone bundle (no React dependency, for CDN usage)
+    {
+        entry: ['src/standalone.ts'],
+        format: ['iife'],
+        outDir: 'dist',
+        outExtension: () => ({ js: '.js' }),
+        dts: false,
+        sourcemap: false,
         minify: true,
+        // Don't set globalName - let the code handle it manually
         esbuildOptions: (options) => {
             options.define = {
                 'process.env.NODE_ENV': '"production"',
             };
+            // Ensure the IIFE executes properly
+            options.footer = {
+                js: '// Standalone build for CDN usage'
+            };
         },
+    },
+    // Standalone module versions (for npm usage)
+    {
+        entry: ['src/standalone.ts'],
+        format: ['cjs', 'esm'],
+        dts: true,
+        sourcemap: true,
+        external: ['dompurify'],
     },
 ]);
