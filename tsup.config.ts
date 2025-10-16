@@ -1,7 +1,17 @@
 import { defineConfig } from 'tsup';
+import { cpSync, existsSync } from 'fs';
+
+async function copyTailwindCSS() {
+    if (!existsSync('src/css')) return;
+    try {
+        cpSync('src/css', 'dist/css', { recursive: true });
+        console.log('✅ Copied Tailwind CSS assets to dist/css');
+    } catch (err) {
+        console.error('❌ Failed to copy Tailwind CSS:', err);
+    }
+}
 
 export default defineConfig([
-    // Main bundle
     {
         entry: ['src/index.ts'],
         format: ['cjs', 'esm'],
@@ -9,8 +19,10 @@ export default defineConfig([
         clean: true,
         sourcemap: true,
         external: ['react', 'react-dom', 'dompurify'],
+        onSuccess: async () => {
+            await copyTailwindCSS();
+        },
     },
-    // React bundle
     {
         entry: ['src/react/index.ts'],
         outDir: 'dist/react',
@@ -19,7 +31,6 @@ export default defineConfig([
         sourcemap: true,
         external: ['react', 'react-dom', 'dompurify'],
     },
-    // Tailwind plugin bundle
     {
         entry: ['src/tailwind/index.ts'],
         outDir: 'dist/tailwind',
@@ -28,22 +39,20 @@ export default defineConfig([
         sourcemap: true,
         external: ['tailwindcss'],
     },
-    // Standalone IIFE bundle for browsers (CDN usage)
     {
         entry: ['src/standalone.ts'],
         outDir: 'dist',
-        outExtension: () => ({ js: '.browser.js' }), // Different filename
+        outExtension: () => ({ js: '.browser.js' }),
         format: ['iife'],
         globalName: 'ChangerawrMarkdown',
         minify: false,
         sourcemap: false,
-        external: [], // Bundle everything for browser
+        external: [],
         esbuildOptions: (options) => {
             options.platform = 'browser';
             options.target = 'es2015';
         },
     },
-    // Standalone module versions (for npm usage)
     {
         entry: ['src/standalone.ts'],
         format: ['cjs', 'esm'],
