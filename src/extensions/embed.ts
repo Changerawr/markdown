@@ -83,8 +83,7 @@ function renderYouTubeEmbed(url: string, options: Record<string, string>, classe
 
     const embedUrl = `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
 
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
       <iframe 
         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
@@ -118,8 +117,7 @@ function renderCodePenEmbed(url: string, options: Record<string, string>, classe
 
     const embedUrl = `https://codepen.io/${user}/embed/${penId}?${embedParams.toString()}`;
 
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <iframe 
       height="${height}" 
       style="width: 100%; border: 0;" 
@@ -147,8 +145,7 @@ function renderVimeoEmbed(url: string, options: Record<string, string>, classes:
 
     const embedUrl = `https://player.vimeo.com/video/${videoId}?${params.toString()}`;
 
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
       <iframe 
         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
@@ -166,8 +163,7 @@ function renderSpotifyEmbed(url: string, options: Record<string, string>, classe
     const embedUrl = url.replace('open.spotify.com', 'open.spotify.com/embed');
     const height = options.height || '380';
 
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <iframe 
       style="border-radius: 12px;" 
       src="${embedUrl}" 
@@ -194,8 +190,7 @@ function renderCodeSandboxEmbed(url: string, options: Record<string, string>, cl
         embedUrl += `?view=${view}`;
     }
 
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <iframe 
       src="${embedUrl}"
       style="width: 100%; height: ${height}px; border: 0; border-radius: 4px; overflow: hidden;"
@@ -210,8 +205,7 @@ function renderFigmaEmbed(url: string, options: Record<string, string>, classes:
     const embedUrl = `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(url)}`;
     const height = options.height || '450';
 
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <iframe 
       style="border: none;" 
       width="100%" 
@@ -223,8 +217,7 @@ function renderFigmaEmbed(url: string, options: Record<string, string>, classes:
 }
 
 function renderTwitterEmbed(url: string, _options: Record<string, string>, classes: string): string {
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <div class="p-4">
       <div class="flex items-center gap-3 mb-3">
         <svg class="w-6 h-6 fill-current text-blue-500" viewBox="0 0 24 24">
@@ -255,8 +248,7 @@ function renderGitHubEmbed(url: string, _options: Record<string, string>, classe
         return createErrorEmbed('Invalid GitHub URL', url, classes);
     }
 
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <div class="p-4">
       <div class="flex items-center gap-3 mb-3">
         <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
@@ -281,8 +273,7 @@ function renderGitHubEmbed(url: string, _options: Record<string, string>, classe
 function renderGenericEmbed(url: string, _options: Record<string, string>, classes: string): string {
     const domain = extractDomain(url);
 
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <div class="p-4">
       <div class="flex items-center gap-3 mb-3">
         <div class="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
@@ -307,8 +298,7 @@ function renderGenericEmbed(url: string, _options: Record<string, string>, class
 }
 
 function createErrorEmbed(error: string, url: string, classes: string): string {
-    return `
-  <div class="${classes}">
+    return `<div class="${classes}">
     <div class="p-4 text-destructive">
       <div class="font-medium flex items-center gap-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

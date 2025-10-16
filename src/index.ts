@@ -6,13 +6,18 @@
  */
 
 import { ChangerawrMarkdown, parseMarkdown, renderMarkdown } from './engine';
+import {BlockquoteExtension, BoldExtension,
+    CodeBlockExtension, CoreExtensions, HeadingExtension,
+    HorizontalRuleExtension, ImageExtension, InlineCodeExtension, ItalicExtension,
+    LineBreakExtension,
+    LinkExtension, ListExtension, ParagraphExtension, TaskListExtension, TextExtension } from './extensions/core';
 import { AlertExtension, ButtonExtension, EmbedExtension } from './extensions';
 import { renderToHTML } from './outputs/html';
-import {renderToAST, renderToJSON } from './outputs/json';
+import { renderToAST, renderToJSON } from './outputs/json';
 import { renderToTailwind } from './outputs/tailwind';
-import {parseCum, renderCum } from './standalone';
-import { EngineConfig, Extension } from './types';
-import { escapeHtml, extractDomain, generateId, Logger, parseOptions, PerformanceTimer, sanitizeHtml } from './utils';
+import { parseCum, renderCum } from './standalone';
+import type { EngineConfig, Extension } from './types';
+import { escapeHtml, extractDomain, generateId, Logger, parseOptions, PerformanceTimer, sanitizeHtml } from "./utils";
 
 // ========================================
 // CORE ENGINE AND CLASSES
@@ -69,7 +74,29 @@ export type {
 } from './types';
 
 // ========================================
-// BUILT-IN EXTENSIONS
+// CORE EXTENSIONS (NEW!)
+// ========================================
+
+export {
+    CoreExtensions,
+    TextExtension,
+    HeadingExtension,
+    BoldExtension,
+    ItalicExtension,
+    InlineCodeExtension,
+    CodeBlockExtension,
+    LinkExtension,
+    ImageExtension,
+    ListExtension,
+    TaskListExtension,
+    BlockquoteExtension,
+    HorizontalRuleExtension,
+    ParagraphExtension,
+    LineBreakExtension
+} from './extensions/core';
+
+// ========================================
+// FEATURE EXTENSIONS
 // ========================================
 
 export {
@@ -196,8 +223,7 @@ export function createHTMLEngine(config?: Omit<EngineConfig, 'renderer'>): Chang
         renderer: {
             format: 'html',
             sanitize: true,
-            allowUnsafeHtml: false,
-            ...config?.parser
+            allowUnsafeHtml: false
         }
     });
 }
@@ -211,8 +237,7 @@ export function createTailwindEngine(config?: Omit<EngineConfig, 'renderer'>): C
         renderer: {
             format: 'tailwind',
             sanitize: true,
-            allowUnsafeHtml: false,
-            ...config?.parser
+            allowUnsafeHtml: false
         }
     });
 }
@@ -237,24 +262,31 @@ export function createDebugEngine(config?: EngineConfig): ChangerawrMarkdown {
 }
 
 /**
- * Create an engine without built-in extensions (minimal setup)
+ * Create an engine with only specified extensions (minimal setup)
  */
-export function createMinimalEngine(config?: EngineConfig): ChangerawrMarkdown {
-    const engine = new ChangerawrMarkdown({
-        ...config,
-        extensions: [] // Override to prevent built-in extensions
-    });
+export function createMinimalEngine(extensions: Extension[] = []): ChangerawrMarkdown {
+    const engine = new ChangerawrMarkdown();
 
-    // Manually remove built-in extensions if they were added
-    if (engine.hasExtension('alert')) {
-        engine.unregisterExtension('alert');
-    }
-    if (engine.hasExtension('button')) {
-        engine.unregisterExtension('button');
-    }
-    if (engine.hasExtension('embed')) {
-        engine.unregisterExtension('embed');
-    }
+    // Clear all default extensions
+    const defaultExtensions = engine.getExtensions();
+    defaultExtensions.forEach(ext => engine.unregisterExtension(ext));
+
+    // Only add the ones specified
+    extensions.forEach(ext => engine.registerExtension(ext));
+
+    return engine;
+}
+
+/**
+ * Create an engine with only core markdown extensions (no custom features)
+ */
+export function createCoreOnlyEngine(config?: EngineConfig): ChangerawrMarkdown {
+    const engine = new ChangerawrMarkdown(config);
+
+    // Remove feature extensions, keep core
+    engine.unregisterExtension('alert');
+    engine.unregisterExtension('button');
+    engine.unregisterExtension('embed');
 
     return engine;
 }
@@ -294,6 +326,7 @@ export const markdown = {
     createTailwindEngine,
     createDebugEngine,
     createMinimalEngine,
+    createCoreOnlyEngine,
     createCustomEngine,
 
     // Standalone functions
@@ -305,6 +338,26 @@ export const markdown = {
 
     // Extensions
     extensions: {
+        // All core extensions as a bundle
+        core: CoreExtensions,
+
+        // Individual core extensions
+        Text: TextExtension,
+        Heading: HeadingExtension,
+        Bold: BoldExtension,
+        Italic: ItalicExtension,
+        InlineCode: InlineCodeExtension,
+        CodeBlock: CodeBlockExtension,
+        Link: LinkExtension,
+        Image: ImageExtension,
+        List: ListExtension,
+        TaskList: TaskListExtension,
+        Blockquote: BlockquoteExtension,
+        HorizontalRule: HorizontalRuleExtension,
+        Paragraph: ParagraphExtension,
+        LineBreak: LineBreakExtension,
+
+        // Feature extensions
         Alert: AlertExtension,
         Button: ButtonExtension,
         Embed: EmbedExtension
@@ -387,6 +440,15 @@ export const presets = {
     },
 
     /**
+     * Core-only preset with just markdown basics
+     */
+    coreOnly: {
+        renderer: {
+            format: 'tailwind' as const
+        }
+    },
+
+    /**
      * Performance preset with minimal processing
      */
     fast: {
@@ -409,6 +471,11 @@ export function createEngineWithPreset(
     additionalConfig?: EngineConfig
 ): ChangerawrMarkdown {
     const preset = presets[presetName];
+
+    if (presetName === 'coreOnly') {
+        return createCoreOnlyEngine(additionalConfig);
+    }
+
     return new ChangerawrMarkdown({
         ...preset,
         ...additionalConfig

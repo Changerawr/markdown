@@ -9,7 +9,9 @@ import type {
     PerformanceMetrics
 } from './types';
 
-// Built-in extensions
+// Import core extensions
+import { CoreExtensions } from './extensions/core';
+// Import feature extensions
 import { AlertExtension } from './extensions/alert';
 import { ButtonExtension } from './extensions/button';
 import { EmbedExtension } from './extensions/embed';
@@ -23,8 +25,11 @@ export class ChangerawrMarkdown {
         this.parser = new MarkdownParser(config?.parser);
         this.renderer = new MarkdownRenderer(config?.renderer);
 
-        // Register built-in extensions first
-        this.registerBuiltInExtensions();
+        // Register core extensions first (for backwards compatibility)
+        this.registerCoreExtensions();
+
+        // Register feature extensions (for backwards compatibility)
+        this.registerFeatureExtensions();
 
         // Register custom extensions if provided
         if (config?.extensions) {
@@ -33,15 +38,59 @@ export class ChangerawrMarkdown {
             });
         }
 
-        // Ensure default rules are setup after extensions
-        this.parser.setupDefaultRulesIfEmpty();
+        // No need for default rules - everything is extension-based now!
     }
 
-    /**
-     * Register a custom extension
-     */
+    private registerFeatureExtensions(): void {
+        this.registerExtension(AlertExtension);
+        this.registerExtension(ButtonExtension);
+        this.registerExtension(EmbedExtension);
+    }
+
+    private registerCoreExtensions(): void {
+        CoreExtensions.forEach(extension => {
+            this.registerExtension(extension);
+        });
+    }
+
     registerExtension(extension: Extension): ExtensionRegistration {
         try {
+            // Validate extension before registration
+            if (!extension.name || typeof extension.name !== 'string') {
+                throw new Error('Extension must have a valid name');
+            }
+
+            if (!Array.isArray(extension.parseRules)) {
+                throw new Error('Extension must have parseRules array');
+            }
+
+            if (!Array.isArray(extension.renderRules)) {
+                throw new Error('Extension must have renderRules array');
+            }
+
+            // Validate parse rules
+            extension.parseRules.forEach((rule, index) => {
+                if (!rule.name || typeof rule.name !== 'string') {
+                    throw new Error(`Parse rule ${index} must have a valid name`);
+                }
+                if (!rule.pattern || !(rule.pattern instanceof RegExp)) {
+                    throw new Error(`Parse rule ${index} must have a valid RegExp pattern`);
+                }
+                if (!rule.render || typeof rule.render !== 'function') {
+                    throw new Error(`Parse rule ${index} must have a valid render function`);
+                }
+            });
+
+            // Validate render rules
+            extension.renderRules.forEach((rule, index) => {
+                if (!rule.type || typeof rule.type !== 'string') {
+                    throw new Error(`Render rule ${index} must have a valid type`);
+                }
+                if (!rule.render || typeof rule.render !== 'function') {
+                    throw new Error(`Render rule ${index} must have a valid render function`);
+                }
+            });
+
             // Store extension
             this.extensions.set(extension.name, extension);
 
@@ -70,9 +119,6 @@ export class ChangerawrMarkdown {
         }
     }
 
-    /**
-     * Unregister an extension
-     */
     unregisterExtension(name: string): boolean {
         const extension = this.extensions.get(name);
         if (!extension) {
@@ -92,52 +138,31 @@ export class ChangerawrMarkdown {
         }
     }
 
-    /**
-     * Parse markdown content into tokens
-     */
     parse(markdown: string): MarkdownToken[] {
         return this.parser.parse(markdown);
     }
 
-    /**
-     * Render tokens to HTML
-     */
     render(tokens: MarkdownToken[]): string {
         return this.renderer.render(tokens);
     }
 
-    /**
-     * Parse and render markdown to HTML in one step
-     */
     toHtml(markdown: string): string {
         const tokens = this.parse(markdown);
         return this.render(tokens);
     }
 
-    /**
-     * Get list of registered extensions
-     */
     getExtensions(): string[] {
         return Array.from(this.extensions.keys());
     }
 
-    /**
-     * Check if extension is registered
-     */
     hasExtension(name: string): boolean {
         return this.extensions.has(name);
     }
 
-    /**
-     * Get parser warnings
-     */
     getWarnings(): string[] {
         return [...this.parser.getWarnings(), ...this.renderer.getWarnings()];
     }
 
-    /**
-     * Get debug information from last render
-     */
     getDebugInfo(): DebugInfo | null {
         return {
             warnings: this.getWarnings(),
@@ -148,9 +173,6 @@ export class ChangerawrMarkdown {
         };
     }
 
-    /**
-     * Get performance metrics for the last operation
-     */
     getPerformanceMetrics(): PerformanceMetrics | null {
         return {
             parseTime: 0,
@@ -160,41 +182,85 @@ export class ChangerawrMarkdown {
         };
     }
 
-    /**
-     * Register built-in extensions
-     */
-    private registerBuiltInExtensions(): void {
-        this.registerExtension(AlertExtension);
-        this.registerExtension(ButtonExtension);
-        this.registerExtension(EmbedExtension);
-    }
-
-    /**
-     * Rebuild parser and renderer with current extensions
-     */
     private rebuildParserAndRenderer(): void {
         // Get current configs
         const parserConfig = this.parser.getConfig();
         const rendererConfig = this.renderer.getConfig();
 
-        // Recreate parser and renderer
+        // Recreate parser and renderer completely
         this.parser = new MarkdownParser(parserConfig);
         this.renderer = new MarkdownRenderer(rendererConfig);
 
-        // Re-register only the extensions that are still in the map
+        // Get the extensions that are still in the map (after removal)
         const extensionsToRegister = Array.from(this.extensions.values());
 
-        // Clear the map and re-register from scratch
-        this.extensions.clear();
+        // Re-register remaining extensions in the correct order
+        // Feature extensions first
+        const featureExtensions = extensionsToRegister.filter(ext =>
+            ['alert', 'button', 'embed'].includes(ext.name)
+        );
 
-        // Register remaining extensions
-        extensionsToRegister.forEach(extension => {
-            this.registerExtension(extension);
+        // Core extensions second
+        const coreExtensions = extensionsToRegister.filter(ext =>
+            ['text', 'heading', 'bold', 'italic', 'code', 'codeblock', 'link', 'image', 'list', 'task-list', 'blockquote', 'hr', 'paragraph', 'line-break'].includes(ext.name)
+        );
+
+        // Custom extensions last
+        const customExtensions = extensionsToRegister.filter(ext =>
+            !['alert', 'button', 'embed', 'text', 'heading', 'bold', 'italic', 'code', 'codeblock', 'link', 'image', 'list', 'task-list', 'blockquote', 'hr', 'paragraph', 'line-break'].includes(ext.name)
+        );
+
+        // Register in correct order without going through the extension map
+        [...featureExtensions, ...coreExtensions, ...customExtensions].forEach(extension => {
+            // Add rules directly to parser and renderer
+            extension.parseRules.forEach(rule => {
+                this.parser.addRule(rule);
+            });
+
+            extension.renderRules.forEach(rule => {
+                this.renderer.addRule(rule);
+            });
         });
-
-        // Ensure default rules are setup
-        this.parser.setupDefaultRulesIfEmpty();
     }
+}
+
+// Factory functions for specific use cases
+export function createMinimalEngine(config?: EngineConfig): ChangerawrMarkdown {
+    // Create engine with NO default extensions
+    const minimalConfig = {
+        ...config,
+        extensions: config?.extensions || []
+    };
+
+    const engine = new ChangerawrMarkdown();
+
+    // Clear all default extensions
+    const defaultExtensions = engine.getExtensions();
+    defaultExtensions.forEach(ext => engine.unregisterExtension(ext));
+
+    // Only add the ones specified in config
+    if (minimalConfig.extensions) {
+        minimalConfig.extensions.forEach(ext => engine.registerExtension(ext));
+    }
+
+    return engine;
+}
+
+export function createCoreOnlyEngine(config?: EngineConfig): ChangerawrMarkdown {
+    // Create engine with only core extensions (no alerts, buttons, embeds)
+    const engine = new ChangerawrMarkdown();
+
+    // Remove feature extensions, keep core
+    engine.unregisterExtension('alert');
+    engine.unregisterExtension('button');
+    engine.unregisterExtension('embed');
+
+    // Add any custom extensions
+    if (config?.extensions) {
+        config.extensions.forEach(ext => engine.registerExtension(ext));
+    }
+
+    return engine;
 }
 
 // Default instance for convenience functions

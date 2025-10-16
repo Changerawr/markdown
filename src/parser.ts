@@ -6,37 +6,52 @@ export class MarkdownParser {
     private config: ParserConfig;
 
     constructor(config?: ParserConfig) {
-        this.config = config || {};
+        this.config = {
+            debugMode: false,
+            maxIterations: 10000,
+            validateMarkdown: false,
+            ...config
+        };
     }
 
     addRule(rule: ParseRule): void {
         this.rules.push(rule);
-        // Sort by priority - put specific patterns first
+        // Sort by priority - extensions should define their own priority
         this.rules.sort((a, b) => {
-            // CUM extensions first (alert, embed, button)
-            if (a.name.includes('alert') || a.name.includes('embed') || a.name.includes('button')) return -1;
-            if (b.name.includes('alert') || b.name.includes('embed') || b.name.includes('button')) return 1;
+            // Feature extensions first (alert, button, embed) - they have more specific patterns
+            const aFeatureExtension = ['alert', 'button', 'embed'].includes(a.name);
+            const bFeatureExtension = ['alert', 'button', 'embed'].includes(b.name);
+
+            if (aFeatureExtension && !bFeatureExtension) return -1;
+            if (!aFeatureExtension && bFeatureExtension) return 1;
+
+            // Core extensions next
+            const aCoreExtension = ['text', 'heading', 'bold', 'italic', 'code', 'codeblock', 'link', 'image', 'list', 'task-list', 'blockquote', 'hr', 'paragraph', 'line-break'].includes(a.name);
+            const bCoreExtension = ['text', 'heading', 'bold', 'italic', 'code', 'codeblock', 'link', 'image', 'list', 'task-list', 'blockquote', 'hr', 'paragraph', 'line-break'].includes(b.name);
+
+            if (aCoreExtension && !bCoreExtension) return -1;
+            if (!aCoreExtension && bCoreExtension) return 1;
+
+            // Within same category, specific ordering
+            // Images before links (more specific pattern)
+            if (a.name === 'image' && b.name === 'link') return -1;
+            if (a.name === 'link' && b.name === 'image') return 1;
 
             // Task lists before regular lists
-            if (a.name === 'task-list') return -1;
-            if (b.name === 'task-list') return 1;
-            if (a.name === 'list' && b.name === 'task-list') return 1;
-            if (b.name === 'list' && a.name === 'task-list') return -1;
+            if (a.name === 'task-item' && b.name === 'list-item') return -1;
+            if (a.name === 'list-item' && b.name === 'task-item') return 1;
 
-            // Then other rules
+            // Code blocks before inline code
+            if (a.name === 'codeblock' && b.name === 'code') return -1;
+            if (a.name === 'code' && b.name === 'codeblock') return 1;
+
+            // Bold before italic
+            if (a.name === 'bold' && b.name === 'italic') return -1;
+            if (a.name === 'italic' && b.name === 'bold') return 1;
+
+            // Then alphabetical
             return a.name.localeCompare(b.name);
         });
-    }
-
-    setupDefaultRulesIfEmpty(): void {
-        // Check if we have any default rules (not just extension rules)
-        const hasDefaultRules = this.rules.some(rule =>
-            !['alert', 'button', 'embed'].includes(rule.name)
-        );
-
-        if (!hasDefaultRules) {
-            this.setupDefaultRules();
-        }
     }
 
     hasRule(name: string): boolean {
@@ -47,8 +62,19 @@ export class MarkdownParser {
         // Clear previous warnings
         this.warnings = [];
 
-        // Ensure we have some rules
-        this.setupDefaultRulesIfEmpty();
+        if (!markdown.trim()) {
+            return [];
+        }
+
+        // Check if we have any rules at all
+        if (this.rules.length === 0) {
+            this.warnings.push('No parse rules registered - consider using CoreExtensions');
+            return [{
+                type: 'text',
+                content: markdown,
+                raw: markdown
+            }];
+        }
 
         // Pre-process markdown to handle common issues
         const processedMarkdown = this.preprocessMarkdown(markdown);
@@ -56,7 +82,7 @@ export class MarkdownParser {
         const tokens: MarkdownToken[] = [];
         let remaining = processedMarkdown;
         let iterationCount = 0;
-        const maxIterations = this.config.maxIterations || (markdown.length * 2);
+        const maxIterations = this.config.maxIterations || 10000;
 
         while (remaining.length > 0 && iterationCount < maxIterations) {
             iterationCount++;
@@ -173,11 +199,6 @@ export class MarkdownParser {
         this.warnings = [];
     }
 
-    getIterationCount(): number {
-        // Return last iteration count for debugging
-        return 0; // Simplified for now
-    }
-
     private preprocessMarkdown(markdown: string): string {
         // Check for common markdown issues and warn about them
         if (this.config.validateMarkdown) {
@@ -251,189 +272,5 @@ export class MarkdownParser {
         }
 
         return processed;
-    }
-
-    private setupDefaultRules(): void {
-        // Headers (most specific first)
-        this.addRule({
-            name: 'heading',
-            pattern: /^(#{1,6})\s+(.+)$/m,
-            render: (match) => ({
-                type: 'heading',
-                content: match[2]?.trim() || '',
-                raw: match[0] || '',
-                attributes: {
-                    level: String(match[1]?.length || 1)
-                }
-            })
-        });
-
-        // Code blocks (before inline code)
-        this.addRule({
-            name: 'codeblock',
-            pattern: /```(\w+)?\s*\n([\s\S]*?)\n```/,
-            render: (match) => ({
-                type: 'codeblock',
-                content: match[2] || '',
-                raw: match[0] || '',
-                attributes: {
-                    language: match[1] || 'text'
-                }
-            })
-        });
-
-        // Hard line breaks - backslash at end of line
-        this.addRule({
-            name: 'hard-break-backslash',
-            pattern: /\\\s*\n/,
-            render: (match) => ({
-                type: 'line-break',
-                content: '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Hard line breaks - two spaces at end of line
-        this.addRule({
-            name: 'hard-break-spaces',
-            pattern: /  +\n/,
-            render: (match) => ({
-                type: 'line-break',
-                content: '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Paragraph breaks - double newlines
-        this.addRule({
-            name: 'paragraph-break',
-            pattern: /\n\s*\n/,
-            render: (match) => ({
-                type: 'paragraph-break',
-                content: '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Bold (before italic to avoid conflicts)
-        this.addRule({
-            name: 'bold',
-            pattern: /\*\*((?:(?!\*\*).)+)\*\*/,
-            render: (match) => ({
-                type: 'bold',
-                content: match[1] || '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Italic
-        this.addRule({
-            name: 'italic',
-            pattern: /\*((?:(?!\*).)+)\*/,
-            render: (match) => ({
-                type: 'italic',
-                content: match[1] || '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Inline code
-        this.addRule({
-            name: 'code',
-            pattern: /`([^`]+)`/,
-            render: (match) => ({
-                type: 'code',
-                content: match[1] || '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Images (before links to avoid conflicts)
-        this.addRule({
-            name: 'image',
-            pattern: /!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]+)")?\)/,
-            render: (match) => ({
-                type: 'image',
-                content: match[1] || '',
-                raw: match[0] || '',
-                attributes: {
-                    alt: match[1] || '',
-                    src: match[2] || '',
-                    title: match[3] || ''
-                }
-            })
-        });
-
-        // Links
-        this.addRule({
-            name: 'link',
-            pattern: /\[([^\]]+)\]\(([^)]+)\)/,
-            render: (match) => ({
-                type: 'link',
-                content: match[1] || '',
-                raw: match[0] || '',
-                attributes: {
-                    href: match[2] || ''
-                }
-            })
-        });
-
-        // Task lists (before regular lists)
-        this.addRule({
-            name: 'task-list',
-            pattern: /^(\s*)-\s*\[([ xX])\]\s*(.+)$/m,
-            render: (match) => ({
-                type: 'task-item',
-                content: match[3] || '',
-                raw: match[0] || '',
-                attributes: {
-                    checked: String((match[2] || '').toLowerCase() === 'x')
-                }
-            })
-        });
-
-        // Lists (after task lists)
-        this.addRule({
-            name: 'list',
-            pattern: /^(\s*)[-*+]\s+(.+)$/m,
-            render: (match) => ({
-                type: 'list-item',
-                content: match[2] || '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Blockquotes
-        this.addRule({
-            name: 'blockquote',
-            pattern: /^>\s+(.+)$/m,
-            render: (match) => ({
-                type: 'blockquote',
-                content: match[1] || '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Horizontal rules
-        this.addRule({
-            name: 'hr',
-            pattern: /^---$/m,
-            render: (match) => ({
-                type: 'hr',
-                content: '',
-                raw: match[0] || ''
-            })
-        });
-
-        // Single newlines (soft line breaks) - handled last
-        this.addRule({
-            name: 'soft-break',
-            pattern: /\n/,
-            render: (match) => ({
-                type: 'soft-break',
-                content: ' ', // Convert to space for inline text
-                raw: match[0] || ''
-            })
-        });
     }
 }

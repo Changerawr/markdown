@@ -1,5 +1,7 @@
+// tests/react.test.tsx
 /**
  * React component tests for @changerawr/markdown
+ * Updated for extension-based architecture
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -81,7 +83,6 @@ describe('React Components', () => {
         });
 
         it('should handle errors gracefully', () => {
-            // Mock console.error to avoid noise in test output
             const originalError = console.error;
             console.error = vi.fn();
 
@@ -96,8 +97,6 @@ describe('React Components', () => {
                 />
             );
 
-            // Since we can't easily trigger a markdown render error,
-            // let's just verify the component renders without crashing
             const container = document.querySelector('.changerawr-markdown');
             expect(container).toBeTruthy();
 
@@ -197,8 +196,6 @@ describe('React Hooks', () => {
         it('should show loading state initially', () => {
             render(<TestHookComponent content="# Loading Test" />);
 
-            // Note: Due to the immediate processing nature of our hook,
-            // loading state might be very brief or not visible
             const container = document.querySelector('[data-testid]');
             expect(container).toBeTruthy();
         });

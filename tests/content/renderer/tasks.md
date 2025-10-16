@@ -1,3 +1,0 @@
-- [x] Completed task
-- [ ] Incomplete task
-- [X] Another completed task

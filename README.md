@@ -1,6 +1,6 @@
 # @changerawr/markdown
 
-> Powerful TypeScript-first markdown renderer with custom extensions - supports HTML, Tailwind CSS, and JSON outputs
+> Powerful TypeScript-first markdown renderer with modular extensions - supports HTML, Tailwind CSS, and JSON outputs
 
 [![npm version](https://badge.fury.io/js/@changerawr%2Fmarkdown.svg)](https://www.npmjs.com/package/@changerawr/markdown)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
@@ -9,7 +9,9 @@
 ## ✨ Features
 
 - 🚀 **Multiple Output Formats**: HTML, Tailwind CSS, or JSON AST
-- 🧩 **Custom Extensions**: Built-in Alert, Button, and Embed extensions
+- 🧩 **Modular Extensions**: Every feature is an extension - mix and match what you need
+- 📦 **Core Extensions**: Text, headings, bold, italic, code, links, images, lists, blockquotes, and more
+- 🎨 **Feature Extensions**: Built-in Alert, Button, and Embed extensions
 - ⚛️ **React Integration**: Drop-in `<MarkdownRenderer>` component + hooks
 - 🍦 **Vanilla JS Support**: Use anywhere with `renderCum()` function
 - 📝 **TypeScript First**: Fully typed with excellent IntelliSense
@@ -94,6 +96,57 @@ function MarkdownEditor() {
 }
 ```
 
+## 🧩 Modular Architecture
+
+Unlike traditional markdown parsers, **every feature is an extension**. This gives you complete control over what functionality you include.
+
+### Core Extensions (Always Available)
+- **TextExtension**: Plain text rendering with HTML escaping
+- **HeadingExtension**: H1-H6 headings with anchor links
+- **BoldExtension** & **ItalicExtension**: Text formatting
+- **InlineCodeExtension** & **CodeBlockExtension**: Code syntax
+- **LinkExtension** & **ImageExtension**: Links and images
+- **ListExtension** & **TaskListExtension**: Regular and task lists
+- **BlockquoteExtension**: Quote blocks
+- **HorizontalRuleExtension**: Horizontal dividers
+- **ParagraphExtension** & **LineBreakExtension**: Text flow
+
+### Feature Extensions (Built-in)
+- **AlertExtension**: Colored alert boxes
+- **ButtonExtension**: Interactive styled buttons
+- **EmbedExtension**: Media embeds (YouTube, GitHub, etc.)
+
+### Engine Variants
+
+```typescript
+import { 
+  createEngine,           // Full-featured (default)
+  createCoreOnlyEngine,   // Just markdown basics
+  createMinimalEngine,    // Only specified extensions
+  createHTMLEngine,       // Plain HTML output
+  createTailwindEngine    // Tailwind CSS output
+} from '@changerawr/markdown';
+
+// Full-featured engine (all extensions)
+const full = createEngine();
+
+// Core markdown only (no alerts/buttons/embeds)
+const core = createCoreOnlyEngine();
+
+// Minimal engine with only specific extensions
+const minimal = createMinimalEngine([
+  TextExtension,
+  HeadingExtension,
+  BoldExtension
+]);
+
+// Custom combination
+const custom = createCustomEngine([
+  ...CoreExtensions,      // All core extensions
+  MyCustomExtension       // Your extension
+]);
+```
+
 ## 🎨 Output Formats
 
 ### Tailwind CSS (Default)
@@ -155,6 +208,8 @@ Add styled buttons with custom actions:
 ```markdown
 [button:Get Started](https://example.com){primary,lg}
 [button:Learn More](https://docs.example.com){secondary,sm}
+[button:Same Tab](https://example.com){success,self}
+[button:Disabled](#){danger,disabled}
 ```
 
 ### Media Embeds
@@ -162,7 +217,8 @@ Embed videos, images, and other media:
 
 ```markdown
 [embed:youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ){autoplay:1}
-[embed:image](https://example.com/image.jpg){width:800,height:600}
+[embed:github](https://github.com/user/repo)
+[embed:codepen](https://codepen.io/user/pen/abc123){height:500,theme:dark}
 ```
 
 ## ⚛️ React Components
@@ -206,7 +262,7 @@ import { ChangerawrMarkdown } from '@changerawr/markdown';
 const engine = new ChangerawrMarkdown();
 
 // Add a highlight extension
-engine.registerExtension({
+const highlightExtension = {
   name: 'highlight',
   parseRules: [{
     name: 'highlight',
@@ -221,7 +277,9 @@ engine.registerExtension({
     type: 'highlight',
     render: (token) => `<mark class="bg-yellow-200 px-1">${token.content}</mark>`
   }]
-});
+};
+
+engine.registerExtension(highlightExtension);
 
 const html = engine.toHtml('This is ==highlighted text==');
 // <mark class="bg-yellow-200 px-1">highlighted text</mark>
@@ -278,10 +336,11 @@ import {
   createHTMLEngine,
   createTailwindEngine,
   createDebugEngine,
-  createMinimalEngine
+  createMinimalEngine,
+  createCoreOnlyEngine
 } from '@changerawr/markdown';
 
-// General purpose engine
+// General purpose engine (all extensions)
 const engine = createEngine();
 
 // HTML-only engine
@@ -290,8 +349,11 @@ const htmlEngine = createHTMLEngine();
 // Debug-enabled engine
 const debugEngine = createDebugEngine();
 
+// Core markdown only (no feature extensions)
+const coreEngine = createCoreOnlyEngine();
+
 // Minimal engine (no built-in extensions)
-const minimalEngine = createMinimalEngine();
+const minimalEngine = createMinimalEngine([TextExtension, HeadingExtension]);
 ```
 
 ## 🍦 Standalone Usage (No React)
@@ -315,6 +377,42 @@ const tokens = parseCum('# Hello World');
 ```
 
 ## 🎨 Styling & Theming
+
+### Tailwind CSS Plugin (v3 & v4 Compatible)
+
+**For Tailwind CSS v3:**
+```javascript
+// tailwind.config.js
+const { changerawrMarkdownPlugin } = require('@changerawr/markdown/tailwind');
+
+module.exports = {
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  plugins: [
+    changerawrMarkdownPlugin({
+      includeExtensions: true,   // Include alert/button styles
+      darkMode: true            // Include dark mode variants
+    })
+  ]
+}
+```
+
+**For Tailwind CSS v4:**
+```javascript
+// tailwind.config.js
+import { changerawrMarkdownPlugin } from '@changerawr/markdown/tailwind';
+
+export default {
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  plugins: [
+    changerawrMarkdownPlugin({
+      includeExtensions: true,   // Include alert/button styles
+      darkMode: true            // Include dark mode variants
+    })
+  ]
+}
+```
+
+The plugin ensures all necessary classes are available for markdown rendering, even if they're not used elsewhere in your app.
 
 ### Custom CSS Classes
 
@@ -349,6 +447,9 @@ const docsEngine = createEngineWithPreset('docs');
 
 // Minimal styling
 const minimalEngine = createEngineWithPreset('minimal');
+
+// Core-only (no feature extensions)
+const coreEngine = createEngineWithPreset('coreOnly');
 ```
 
 ## 🔍 Debugging & Development
@@ -400,7 +501,8 @@ console.log('Token count:', metrics.tokenCount);
 
 ### Optimization Tips
 
-- Use `createMinimalEngine()` if you don't need built-in extensions
+- Use `createCoreOnlyEngine()` if you don't need feature extensions
+- Use `createMinimalEngine()` with only the extensions you need
 - Set `sanitize: false` if you trust your content (be careful!)
 - Use `format: 'html'` for lighter output without CSS classes
 - Implement custom extensions efficiently to avoid performance bottlenecks
@@ -425,6 +527,16 @@ npm run test:coverage   # Run with coverage report
 - `renderToTailwind(markdown: string): string` - Render with Tailwind classes
 - `renderToJSON(markdown: string): JsonAstNode` - Render to JSON AST
 
+### Factory Functions
+
+- `createEngine(config?)` - Full-featured engine
+- `createCoreOnlyEngine(config?)` - Core markdown only
+- `createMinimalEngine(extensions[])` - Minimal with specified extensions
+- `createHTMLEngine(config?)` - HTML output optimized
+- `createTailwindEngine(config?)` - Tailwind output optimized
+- `createDebugEngine(config?)` - Debug mode enabled
+- `createCustomEngine(extensions[], config?)` - Custom extension set
+
 ### React Components
 
 - `<MarkdownRenderer />` - Main React component
@@ -444,6 +556,12 @@ npm run test:coverage   # Run with coverage report
 - `MarkdownParser` - Content parsing
 - `MarkdownRenderer` - Token rendering
 
+### Extensions
+
+- **Core Extensions**: `CoreExtensions` array or individual exports
+- **Feature Extensions**: `AlertExtension`, `ButtonExtension`, `EmbedExtension`
+- **Custom**: Create your own with `parseRules` and `renderRules`
+
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
@@ -462,9 +580,9 @@ MIT © [Changerawr Team](https://github.com/changerawr)
 
 ## 💡 What Makes It Special?
 
+- **Extension-First Architecture**: Every feature is modular - use only what you need
 - **TypeScript-First**: Built with TypeScript from the ground up for excellent developer experience
 - **Framework Agnostic**: Works with React, Vue, Svelte, vanilla JS, or any framework
-- **Extensible Architecture**: Easy to add custom markdown syntax and rendering
 - **Production Ready**: Thoroughly tested, performant, and secure
 - **Modern Output**: Tailwind CSS support for modern web applications
 - **Developer Friendly**: Great debugging tools and clear error messages
