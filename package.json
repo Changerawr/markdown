@@ -1,6 +1,6 @@
 {
   "name": "@changerawr/markdown",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publishConfig": {
     "access": "public"
   },
@@ -49,8 +49,9 @@
       "import": "./dist/standalone.mjs",
       "require": "./dist/standalone.js"
     },
-    "./styles": "./dist/styles/index.css",
-    "./styles/base": "./dist/styles/base.css"
+    "./css": "./dist/css/index.css",
+    "./css/core": "./dist/css/core.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",

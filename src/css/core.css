@@ -1,0 +1,33 @@
+/* ===================================
+ * Core-only version without extensions
+ * =================================== */
+
+@layer utilities {
+    /* Essential typography for markdown */
+    .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+    .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+
+    .font-bold { font-weight: 700; }
+    .font-semibold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+    .italic { font-style: italic; }
+    .underline { text-decoration-line: underline; }
+
+    /* Essential spacing */
+    .mt-8 { margin-top: 2rem; }
+    .mt-6 { margin-top: 1.5rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-3 { margin-bottom: 0.75rem; }
+    .leading-7 { line-height: 1.75rem; }
+
+    /* Essential layout */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .gap-2 { gap: 0.5rem; }
+
+    /* Essential borders */
+    .border-l-2 { border-left-width: 2px; }
+    .rounded-lg { border-radius: 0.5rem; }
+}
