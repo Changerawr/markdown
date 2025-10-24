@@ -30,29 +30,35 @@ function App() {
 }
 ```
 
-### Tailwind v3 (Plugin Method)
+### Tailwind v3 (Plugin + Safelist Method)
 
-For Tailwind v3, use the plugin to ensure classes aren't purged.
+For Tailwind v3, use the plugin AND safelist to ensure dynamically-generated classes aren't purged.
 
 **1. Install the package**
 ```bash
 npm install @changerawr/markdown
 ```
 
-**2. Add plugin to your `tailwind.config.js`**
+**2. Add plugin and safelist to your `tailwind.config.js`**
 ```javascript
-import { changerawrMarkdownPlugin } from '@changerawr/markdown/tailwind';
+import { changerawrMarkdownPlugin, getSafelist } from '@changerawr/markdown/tailwind';
 
 export default {
   content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  safelist: getSafelist({
+    includeExtensions: true,   // Include alert/button styles
+    darkMode: true            // Include dark mode variants
+  }),
   plugins: [
     changerawrMarkdownPlugin({
-      includeExtensions: true,   // Include alert/button styles
-      darkMode: true            // Include dark mode variants
+      includeExtensions: true,
+      darkMode: true
     })
   ]
 }
 ```
+
+> **Why both?** The plugin provides the config merge, while the safelist ensures dynamically-generated classes (like `bg-purple-500/10` for alerts) are included in the build. Without the safelist, Tailwind's JIT compiler would purge classes that are built at runtime with string concatenation.
 
 **3. Use markdown components**
 ```tsx
@@ -67,7 +73,24 @@ function App() {
 
 ## 🎯 Why You Need This
 
-Without proper setup, Tailwind might purge essential classes like `text-3xl`, `font-bold`, etc. if they're not found in your templates. Our setup ensures these classes are always available for markdown rendering.
+Markdown components generate classes **dynamically at runtime** using string concatenation (e.g., `'bg-' + color + '-500/10'`). Tailwind's JIT compiler can't detect these classes by scanning your source files, so it would normally purge them from the production build.
+
+Our solution uses two approaches:
+1. **Tailwind v4**: Pre-compiled CSS with all component classes defined explicitly
+2. **Tailwind v3**: Safelist configuration that tells Tailwind which dynamic classes to keep
+
+### The Problem with Dynamic Classes
+
+```typescript
+// ❌ Tailwind JIT can't detect these classes
+const type = 'info';
+const classes = `bg-${type === 'info' ? 'blue' : 'red'}-500/10`;
+
+// ❌ Also problematic - arbitrary values
+const buttonClasses = `scale-[1.02] shadow-[0_1px_0_0_rgba(255,255,255,0.1)]`;
+
+// ✅ Solution: Use safelist (v3) or pre-compiled CSS (v4)
+```
 
 ## 📂 Project Structure
 
@@ -122,21 +145,38 @@ Create custom themes using CSS variables:
 @import "@changerawr/markdown/css";
 ```
 
-### Tailwind v3 (Plugin Options)
+### Tailwind v3 (Plugin + Safelist Options)
 
 ```javascript
-import { changerawrMarkdownPlugin } from '@changerawr/markdown/tailwind';
+import { changerawrMarkdownPlugin, getSafelist } from '@changerawr/markdown/tailwind';
 
 export default {
   content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  safelist: getSafelist({
+    includeExtensions: false,  // Disable alert/button styles
+    darkMode: false           // Disable dark mode variants
+  }),
   plugins: [
     changerawrMarkdownPlugin({
-      includeExtensions: false,  // Disable alert/button styles
-      darkMode: false           // Disable dark mode variants
+      includeExtensions: false,
+      darkMode: false
     })
   ]
 }
 ```
+
+**What the safelist includes:**
+
+With `includeExtensions: true`:
+- All 6 alert types: info (blue), warning (amber), error (red), success (green), tip (purple), note (gray)
+- All 7 button styles: default, primary, secondary, success, danger, outline, ghost
+- Button arbitrary values: `scale-[1.02]`, `scale-[0.98]`, complex box shadows
+- Pseudo-element classes: `before:absolute`, `before:opacity-0`, `hover:before:opacity-100`, etc.
+- All color variants and opacity modifiers: `bg-blue-500/10`, `border-blue-500/30`, etc.
+
+With `includeExtensions: false`:
+- Only core markdown classes (typography, spacing, layout)
+- No alert or button extension classes
 
 ## 🎨 Standard Classes Used
 
@@ -247,24 +287,55 @@ export default {
 ### Tailwind v3 Issues
 
 **Classes still being purged?**
+
+First, make sure you're using BOTH the plugin AND safelist:
 ```javascript
-// Make sure content paths include markdown components
-module.exports = {
-  content: [
-    './src/**/*.{js,ts,jsx,tsx}',
-    './node_modules/@changerawr/markdown/**/*.{js,ts}' // Add if needed
-  ],
-  // ...
-};
+import { changerawrMarkdownPlugin, getSafelist } from '@changerawr/markdown/tailwind';
+
+export default {
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  safelist: getSafelist(), // ⚠️ Don't forget this!
+  plugins: [changerawrMarkdownPlugin()]
+}
 ```
 
-**Plugin not working?** Verify the plugin is imported correctly:
+**Still having issues?** Check if you're using the correct color variants:
 ```javascript
-// ✅ Correct
-import { changerawrMarkdownPlugin } from '@changerawr/markdown/tailwind';
+// ✅ Supported colors (safelisted)
+bg-blue-500/10      // Alert info
+bg-amber-500/10     // Alert warning
+bg-red-500/10       // Alert error
+bg-green-500/10     // Alert success
+bg-purple-500/10    // Alert tip
+bg-gray-500/10      // Alert note
 
-// ❌ Wrong
-const plugin = require('@changerawr/markdown/tailwind');
+// ❌ Not safelisted (will be purged)
+bg-pink-500/10      // Custom color
+bg-teal-500/10      // Custom color
+```
+
+**Adding custom alert types?** Extend the safelist:
+```javascript
+export default {
+  safelist: [
+    ...getSafelist(),
+    // Add your custom classes
+    'bg-pink-500/10',
+    'border-pink-500/30',
+    'text-pink-600',
+    'border-l-pink-500'
+  ],
+  // ...
+}
+```
+
+**Plugin not working?** Verify the imports are correct:
+```javascript
+// ✅ Correct (ES modules)
+import { changerawrMarkdownPlugin, getSafelist } from '@changerawr/markdown/tailwind';
+
+// ⚠️ CommonJS (use if you must)
+const { changerawrMarkdownPlugin, getSafelist } = require('@changerawr/markdown/tailwind');
 ```
 
 ## 📦 Complete Examples
@@ -286,10 +357,11 @@ module.exports = {
 ### Next.js 13 (Pages) with Tailwind v3
 ```javascript
 // tailwind.config.js
-const { changerawrMarkdownPlugin } = require('@changerawr/markdown/tailwind');
+const { changerawrMarkdownPlugin, getSafelist } = require('@changerawr/markdown/tailwind');
 
 module.exports = {
   content: ['./pages/**/*.{js,ts,jsx,tsx}', './components/**/*.{js,ts,jsx,tsx}'],
+  safelist: getSafelist(),
   plugins: [changerawrMarkdownPlugin()]
 }
 ```
@@ -316,16 +388,52 @@ export default defineConfig({
 
 ## 🌟 Migration Guide
 
+### Upgrading from Old Plugin (Pre-Safelist)
+
+If you were using an older version without the safelist, you need to add it:
+
+```diff
+// tailwind.config.js
+- import { changerawrMarkdownPlugin } from '@changerawr/markdown/tailwind';
++ import { changerawrMarkdownPlugin, getSafelist } from '@changerawr/markdown/tailwind';
+
+export default {
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
++ safelist: getSafelist(),
+  plugins: [changerawrMarkdownPlugin()]
+}
+```
+
+**Why?** The old plugin tried to "preserve" classes using CSS custom properties, but this approach:
+- ❌ Doesn't work with Tailwind v4
+- ❌ Doesn't handle arbitrary values like `scale-[1.02]`
+- ❌ Misses some color variants (purple, gray)
+- ❌ Can't handle pseudo-element classes properly
+
+The new safelist approach:
+- ✅ Works with both Tailwind v3 and v4
+- ✅ Explicitly lists ALL classes including arbitrary values
+- ✅ Covers all 6 alert types and 7 button styles
+- ✅ Handles pseudo-elements, opacity modifiers, and complex selectors
+
 ### From v3 Plugin to v4 CSS
 
-1. **Remove plugin from config:**
+1. **Remove plugin and safelist from config:**
    ```diff
+   - import { changerawrMarkdownPlugin, getSafelist } from '@changerawr/markdown/tailwind';
+
+   export default {
+     content: ['./src/**/*.{js,ts,jsx,tsx}'],
+   - safelist: getSafelist(),
    - plugins: [changerawrMarkdownPlugin()]
+   }
    ```
 
 2. **Add CSS import:**
-   ```diff
-   + @import "@changerawr/markdown/css";
+   ```css
+   /* src/app/globals.css */
+   @import "tailwindcss";
+   @import "@changerawr/markdown/css";
    ```
 
 3. **Update build process** to handle CSS imports properly
@@ -337,8 +445,12 @@ export default defineConfig({
 - ✅ Faster builds
 - ✅ More explicit dependencies
 - ✅ Works with any bundler
+- ✅ No safelist needed (classes pre-compiled)
+- ✅ Future-proof for Tailwind v4+
 
-**Tailwind v3 (Plugin):**
+**Tailwind v3 (Plugin + Safelist):**
 - ✅ Familiar plugin system
 - ✅ Dynamic configuration
 - ✅ Existing ecosystem support
+- ✅ Works with current Tailwind v3 projects
+- ⚠️ Requires both plugin AND safelist
