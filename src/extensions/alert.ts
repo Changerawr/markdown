@@ -30,6 +30,7 @@ export const AlertExtension: Extension = {
             render: (token) => {
                 const type = token.attributes?.type || 'info';
                 const title = token.attributes?.title || '';
+                const renderMarkdown = token.attributes?.renderMarkdown as ((md: string) => string) | undefined;
 
                 const typeConfig: Record<string, AlertTypeConfig> = {
                     info: {
@@ -62,6 +63,9 @@ export const AlertExtension: Extension = {
                 const baseClasses = 'border-l-4 p-4 mb-4 rounded-md transition-colors duration-200';
                 const classes = `${baseClasses} ${config?.classes}`;
 
+                // Render the content as markdown if we have the callback
+                const renderedContent = renderMarkdown ? renderMarkdown(token.content) : token.content;
+
                 const titleHtml = title
                     ? `<div class="font-medium mb-2 flex items-center gap-2">
                <span class="text-lg" role="img" aria-label="${type}">${config?.icon}</span>
@@ -74,7 +78,7 @@ export const AlertExtension: Extension = {
 
                 return `<div class="${classes}" role="alert" aria-live="polite">
                   ${titleHtml}
-                  <div class="leading-relaxed">${token.content}</div>
+                  <div class="leading-relaxed">${renderedContent}</div>
                 </div>`;
             }
         }

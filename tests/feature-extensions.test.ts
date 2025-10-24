@@ -53,6 +53,27 @@ describe('Feature Extensions', () => {
                 expect(html).toContain('Test message');
             });
         });
+
+        it('should render nested markdown inside alerts', () => {
+            const markdown = `:::info Alert with Formatting
+This has **bold** and *italic* text.
+Also a [link](https://example.com) and \`code\`.
+:::`;
+            const html = engine.toHtml(markdown);
+
+            // Should render markdown elements
+            expect(html).toContain('<strong');
+            expect(html).toContain('bold</strong>');
+            expect(html).toContain('<em');
+            expect(html).toContain('italic</em>');
+            expect(html).toContain('<a');
+            expect(html).toContain('href="https://example.com"');
+            expect(html).toContain('<code');
+
+            // Should not have raw markdown syntax
+            expect(html).not.toContain('**bold**');
+            expect(html).not.toContain('*italic*');
+        });
     });
 
     describe('ButtonExtension', () => {
