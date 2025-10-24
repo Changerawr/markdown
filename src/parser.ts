@@ -264,7 +264,9 @@ export class MarkdownParser {
 
                 i = j;
             } else if (token) {
-                processed.push(token);
+                // Recursively parse content for block-level elements
+                const processedToken = this.recursivelyParseBlockContent(token);
+                processed.push(processedToken);
                 i++;
             } else {
                 i++;
@@ -272,5 +274,22 @@ export class MarkdownParser {
         }
 
         return processed;
+    }
+
+    private recursivelyParseBlockContent(token: MarkdownToken): MarkdownToken {
+        // List of token types that should have their content recursively parsed
+        const blockTypes = ['alert', 'blockquote'];
+
+        if (blockTypes.includes(token.type) && token.content && token.content.trim()) {
+            // Recursively parse the content into child tokens
+            const children = this.parse(token.content);
+
+            return {
+                ...token,
+                children
+            };
+        }
+
+        return token;
     }
 }

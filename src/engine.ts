@@ -143,17 +143,9 @@ export class ChangerawrMarkdown {
     }
 
     render(tokens: MarkdownToken[]): string {
-        // Inject recursive rendering callback into each token
-        const tokensWithCallback = tokens.map(token => ({
-            ...token,
-            attributes: {
-                ...token.attributes,
-                // Provide a callback for rendering nested markdown content
-                renderMarkdown: (nestedMarkdown: string) => this.toHtml(nestedMarkdown)
-            }
-        }));
-
-        return this.renderer.render(tokensWithCallback);
+        // The renderer will now recursively render children tokens
+        // No need to inject callbacks - children are already tokenized!
+        return this.renderer.render(tokens);
     }
 
     toHtml(markdown: string): string {

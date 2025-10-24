@@ -53,7 +53,20 @@ export class MarkdownRenderer {
 
         if (rule) {
             try {
-                return rule.render(token);
+                // If token has children, render them and inject into attributes
+                let tokenToRender = token;
+                if (token.children && token.children.length > 0) {
+                    const renderedChildren = this.render(token.children);
+                    tokenToRender = {
+                        ...token,
+                        attributes: {
+                            ...token.attributes,
+                            renderedChildren  // Extensions can use this instead of re-parsing
+                        }
+                    };
+                }
+
+                return rule.render(tokenToRender);
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 this.warnings.push(`Render error for ${token.type}: ${errorMessage}`);
