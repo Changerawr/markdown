@@ -143,6 +143,8 @@ export class ChangerawrMarkdown {
     }
 
     render(tokens: MarkdownToken[]): string {
+        // The renderer will now recursively render children tokens
+        // No need to inject callbacks - children are already tokenized!
         return this.renderer.render(tokens);
     }
 

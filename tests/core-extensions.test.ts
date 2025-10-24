@@ -560,6 +560,35 @@ describe('Core Extensions', () => {
             expect(html).toContain('border-l-2');
             expect(html).toContain('This is a quote');
         });
+
+        it('should render nested markdown inside blockquotes', () => {
+            const token = {
+                type: 'blockquote',
+                content: 'This has **bold** and *italic* text',
+                raw: '> This has **bold** and *italic* text',
+                attributes: {
+                    format: 'tailwind',
+                    renderMarkdown: (md: string) => {
+                        // Simulate the recursive markdown rendering
+                        return md
+                            .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold">$1</strong>')
+                            .replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
+                    }
+                }
+            };
+
+            const html = renderer.render([token]);
+
+            // Should render markdown elements
+            expect(html).toContain('<strong');
+            expect(html).toContain('bold</strong>');
+            expect(html).toContain('<em');
+            expect(html).toContain('italic</em>');
+
+            // Should not have raw markdown syntax
+            expect(html).not.toContain('**bold**');
+            expect(html).not.toContain('*italic*');
+        });
     });
 
     describe('HorizontalRuleExtension', () => {

@@ -62,6 +62,12 @@ export const AlertExtension: Extension = {
                 const baseClasses = 'border-l-4 p-4 mb-4 rounded-md transition-colors duration-200';
                 const classes = `${baseClasses} ${config?.classes}`;
 
+                // Use pre-rendered children if available (new efficient approach)
+                // Otherwise fall back to renderMarkdown callback (backwards compat) or raw content
+                const renderedChildren = token.attributes?.renderedChildren as string | undefined;
+                const renderMarkdown = token.attributes?.renderMarkdown as ((md: string) => string) | undefined;
+                const renderedContent = renderedChildren || (renderMarkdown ? renderMarkdown(token.content) : token.content);
+
                 const titleHtml = title
                     ? `<div class="font-medium mb-2 flex items-center gap-2">
                <span class="text-lg" role="img" aria-label="${type}">${config?.icon}</span>
@@ -74,7 +80,7 @@ export const AlertExtension: Extension = {
 
                 return `<div class="${classes}" role="alert" aria-live="polite">
                   ${titleHtml}
-                  <div class="leading-relaxed">${token.content}</div>
+                  <div class="leading-relaxed">${renderedContent}</div>
                 </div>`;
             }
         }

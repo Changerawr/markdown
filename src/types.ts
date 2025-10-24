@@ -4,6 +4,7 @@ export interface MarkdownToken {
     content: string;
     raw: string;
     attributes?: Record<string, string>;
+    children?: MarkdownToken[];  // Support for nested token tree structure
 }
 
 // Parser rule for converting markdown to tokens
