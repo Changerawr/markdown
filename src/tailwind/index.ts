@@ -2,10 +2,9 @@
  * Tailwind CSS plugin exports for @changerawr/markdown
  */
 
-// Export the main plugin, safelist helper, and types
+// Export the main plugin and its types
 export {
     changerawrMarkdownPlugin,
-    getSafelist,
     type ChangerawrMarkdownPluginOptions
 } from './plugin';
 
