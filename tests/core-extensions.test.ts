@@ -431,6 +431,11 @@ describe('Core Extensions', () => {
         beforeEach(() => {
             ListExtension.parseRules.forEach(rule => parser.addRule(rule));
             ListExtension.renderRules.forEach(rule => renderer.addRule(rule));
+            // Add formatting extensions for inline content support
+            BoldExtension.parseRules.forEach(rule => parser.addRule(rule));
+            BoldExtension.renderRules.forEach(rule => renderer.addRule(rule));
+            ItalicExtension.parseRules.forEach(rule => parser.addRule(rule));
+            ItalicExtension.renderRules.forEach(rule => renderer.addRule(rule));
         });
 
         it('should parse list items correctly', () => {
@@ -466,6 +471,21 @@ describe('Core Extensions', () => {
 
             const html = renderer.render([token]);
             expect(html).toBe('<li>Test item</li>');
+        });
+
+        it('should parse and render bold formatting within list items', () => {
+            const markdown = '- **Technical**: Impact is high\n- Details about *italic* formatting';
+            const tokens = parser.parse(markdown);
+
+            const listItems = tokens.filter(t => t.type === 'list-item');
+            expect(listItems).toHaveLength(2);
+            // First item should have bold formatting in its children
+            expect(listItems[0]?.children).toBeDefined();
+            expect(listItems[0]?.children?.some(c => c.type === 'bold')).toBe(true);
+
+            const html = renderer.render(tokens);
+            expect(html).toContain('<strong class="font-bold">Technical</strong>');
+            expect(html).toContain('<em class="italic">italic</em>');
         });
     });
 

@@ -10,7 +10,7 @@ export const AlertExtension: Extension = {
     parseRules: [
         {
             name: 'alert',
-            pattern: /:::(\w+)(?:\s+(.*?))?\s*\n([\s\S]*?)\n:::/,
+            pattern: /:::(\w+)(?: ([^\n]+))?\n([\s\S]*?)\n:::/,
             render: (match: RegExpMatchArray) => {
                 return {
                     type: 'alert',
@@ -18,7 +18,7 @@ export const AlertExtension: Extension = {
                     raw: match[0] || '',
                     attributes: {
                         type: match[1] || 'info',
-                        title: match[2] || ''
+                        title: match[2]?.trim() || ''
                     }
                 };
             }

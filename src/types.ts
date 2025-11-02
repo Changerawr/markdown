@@ -3,7 +3,7 @@ export interface MarkdownToken {
     type: string;
     content: string;
     raw: string;
-    attributes?: Record<string, string>;
+    attributes?: Record<string, string | number | boolean | Function | any>;
     children?: MarkdownToken[];  // Support for nested token tree structure
 }
 

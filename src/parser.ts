@@ -278,7 +278,7 @@ export class MarkdownParser {
 
     private recursivelyParseBlockContent(token: MarkdownToken): MarkdownToken {
         // List of token types that should have their content recursively parsed
-        const blockTypes = ['alert', 'blockquote'];
+        const blockTypes = ['alert', 'blockquote', 'list-item', 'task-item'];
 
         if (blockTypes.includes(token.type) && token.content && token.content.trim()) {
             // Recursively parse the content into child tokens
