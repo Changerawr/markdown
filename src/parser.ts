@@ -4,6 +4,7 @@ export class MarkdownParser {
     private rules: ParseRule[] = [];
     private warnings: string[] = [];
     private config: ParserConfig;
+    private compiledPatterns = new Map<ParseRule, RegExp>(); // Cache compiled regexes
 
     constructor(config?: ParserConfig) {
         this.config = {
@@ -16,6 +17,11 @@ export class MarkdownParser {
 
     addRule(rule: ParseRule): void {
         this.rules.push(rule);
+        // Pre-compile the regex pattern (without global flag for position-based matching)
+        this.compiledPatterns.set(
+            rule,
+            new RegExp(rule.pattern.source, rule.pattern.flags.replace('g', ''))
+        );
         // Sort by priority - extensions should define their own priority
         this.rules.sort((a, b) => {
             // Feature extensions first (alert, button, embed) - they have more specific patterns
@@ -88,17 +94,29 @@ export class MarkdownParser {
             iterationCount++;
             let matched = false;
             let bestMatch: { rule: ParseRule; match: RegExpMatchArray; priority: number } | null = null;
+            let nextBestMatchIndex: number | null = null;
 
             // Try each rule and find the best match (earliest position)
             for (const rule of this.rules) {
                 try {
-                    // Create a fresh regex without global flag for position-based matching
-                    const pattern = new RegExp(rule.pattern.source, rule.pattern.flags.replace('g', ''));
+                    // Use pre-compiled regex pattern
+                    const pattern = this.compiledPatterns.get(rule)!;
                     const match = remaining.match(pattern);
 
                     if (match && match.index !== undefined) {
-                        // Prioritize matches at position 0, but also consider nearby matches
-                        const priority = match.index === 0 ? 1000 : (1000 - match.index);
+                        // If we found a match at position 0, use it immediately (common case)
+                        if (match.index === 0) {
+                            bestMatch = { rule, match, priority: 1000 };
+                            break; // Early exit - can't get better than position 0
+                        }
+
+                        // Track the closest match for chunking optimization
+                        if (nextBestMatchIndex === null || match.index < nextBestMatchIndex) {
+                            nextBestMatchIndex = match.index;
+                        }
+
+                        // Otherwise, consider nearby matches
+                        const priority = 1000 - match.index;
 
                         if (!bestMatch || priority > bestMatch.priority ||
                             (priority === bestMatch.priority && match.index < (bestMatch.match.index || 0))) {
@@ -156,16 +174,20 @@ export class MarkdownParser {
             }
 
             if (!matched) {
-                // Take one character and continue
-                const char = remaining[0];
-                if (char) {
-                    tokens.push({
-                        type: 'text',
-                        content: char,
-                        raw: char
-                    });
-                    remaining = remaining.slice(1);
-                }
+                // Use the next match index we already found during the search
+                // This avoids a second expensive search through all rules
+                const chunkSize = nextBestMatchIndex !== null
+                    ? nextBestMatchIndex
+                    : Math.min(remaining.length, 1000); // Take up to 1000 chars of plain text
+
+                const textChunk = remaining.slice(0, chunkSize);
+
+                tokens.push({
+                    type: 'text',
+                    content: textChunk,
+                    raw: textChunk
+                });
+                remaining = remaining.slice(chunkSize);
             }
         }
 

@@ -6,6 +6,15 @@ export default defineConfig({
         environment: 'jsdom',
         globals: true,
         setupFiles: ['./tests/setup.ts'],
+        testTimeout: 300000, // 5 minutes for performance tests
+        hookTimeout: 300000, // 5 minutes for hooks
+        teardownTimeout: 300000, // 5 minutes for teardown
+        pool: 'forks',
+        poolOptions: {
+            forks: {
+                singleFork: false,
+            },
+        },
         coverage: {
             reporter: ['text', 'json', 'html'],
             exclude: [

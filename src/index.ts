@@ -26,11 +26,20 @@ import { escapeHtml, extractDomain, generateId, Logger, parseOptions, Performanc
 export {
     ChangerawrMarkdown,
     parseMarkdown,
-    renderMarkdown
+    renderMarkdown,
+    type RenderMetrics
 } from './engine';
 
 export { MarkdownParser } from './parser';
 export { MarkdownRenderer } from './renderer';
+
+// Cache utilities
+export {
+    LRUCache,
+    hashContent,
+    memoize,
+    type CacheStats
+} from './cache';
 
 // ========================================
 // TYPE DEFINITIONS
