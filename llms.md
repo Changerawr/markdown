@@ -36,6 +36,17 @@ This document provides comprehensive information about the @changerawr/markdown 
    - Validates and registers extensions
    - Provides convenient API (parse, render, toHtml)
    - Supports extension lifecycle (registration/unregistration)
+   - **Built-in performance features**:
+     - Automatic LRU caching (parse and render caches)
+     - Streaming support for large documents
+     - Performance metrics tracking
+     - Content hashing for cache keys
+
+4. **Cache System** (`src/cache.ts`)
+   - LRU (Least Recently Used) cache implementation
+   - FNV-1a hashing algorithm with sampling for large content
+   - Automatic cache statistics tracking (hits, misses, evictions)
+   - Memoization helper for expensive operations
 
 ### Extension System
 
@@ -175,6 +186,7 @@ Embeds media (YouTube, GitHub, CodePen, etc.)
 - `src/standalone.ts` - Vanilla JS API
 - `src/tailwind/` - Tailwind CSS plugin
 - `src/utils.ts` - HTML escaping, sanitization helpers
+- `src/cache.ts` - LRU cache, hashing, and memoization utilities
 
 ## Testing
 
@@ -184,8 +196,10 @@ All code is tested with **Vitest**:
 - `tests/engine-integration.test.ts` - Integration tests
 - `tests/alert-bug-reproduction.test.ts` - Alert rendering tests
 - `tests/react.test.tsx` - React component tests
+- `tests/performance.test.ts` - Performance and cache tests
+- `tests/performance-stress.test.ts` - Extreme stress tests (1K-100K words)
 
-Test location: 137 tests across 7 test files, all passing.
+Test location: 161 tests across 9 test files, all passing.
 
 ## Common Patterns & Idioms
 
@@ -233,29 +247,75 @@ render: (token) => {
 
 ## Recent Updates & Fixes
 
-### List Formatting (Latest)
+### Performance Optimizations (Latest)
+- **Automatic Caching**: Built-in LRU cache for parse and render operations
+- **Smart Hashing**: FNV-1a with sampling for content >10K characters
+- **Streaming Support**: `toHtmlStreamed()` for progressive rendering of large documents
+- **Performance Metrics**: `toHtmlWithMetrics()` for detailed performance tracking
+- **Parser Optimizations**:
+  - Pre-compiled regex patterns cached per rule
+  - Early exit on position 0 matches
+  - Smart text chunking (up to 1000 chars) instead of char-by-char
+- **Results**: 100K words in ~32s first render, <1ms cached (100-1000x speedup)
+
+### List Formatting
 - Added recursive parsing for list items (`list-item`, `task-item`)
 - Lists now support inline markdown: bold, italic, code, links
 - Updated parser to include lists in recursive block parsing
 
-### Alert Rendering (Latest)
+### Alert Rendering
 - Fixed regex pattern for alerts without titles
 - Pattern: `/:::(\w+)(?: ([^\n]+))?\n([\s\S]*?)\n:::/`
 - Correctly handles multiple consecutive alerts
 - Supports optional titles on same line as alert type
 
-### Type System (Latest)
+### Type System
 - Updated `MarkdownToken.attributes` to allow functions
 - Changed from `Record<string, string>` to `Record<string, string | number | boolean | Function | any>`
 - Enables callback-based markdown rendering and complex attributes
 
-## Performance Considerations
+## Performance & Optimization
 
-1. **Parser**: O(n) iteration through markdown text
+### Built-in Performance Features
+
+1. **Automatic Caching**:
+   - LRU cache for parsed tokens and rendered HTML
+   - Content hashing with FNV-1a algorithm
+   - For large content (>10K chars), uses sampling (first 1K + middle 1K + last 1K)
+   - Cache size configurable (default: 100 entries)
+
+2. **Streaming Support**:
+   - `toHtmlStreamed()` method for progressive rendering
+   - Chunked processing for large documents
+   - Progress callbacks for UI updates
+
+3. **Performance Metrics**:
+   - `toHtmlWithMetrics()` returns detailed timing data
+   - Track parse time, render time, token count, cache hits
+
+4. **Optimized Parser**:
+   - Pre-compiled regex patterns cached per rule
+   - Early exit on position 0 matches (common case)
+   - Smart text chunking (up to 1000 chars at once) instead of character-by-character
+   - Position-based matching avoids backtracking
+
+### Performance Characteristics
+
+- **Small documents** (1K words): ~15ms
+- **Medium documents** (10K words): ~400ms
+- **Large documents** (100K words): ~32s first render, <1ms cached
+- **Cache speedup**: 100-1000x faster for repeated content
+- **Throughput**: ~3,000 words/second on complex mixed content
+
+### Optimization Techniques
+
+1. **Parser**: O(n) iteration through markdown text with chunk optimization
 2. **Rule Ordering**: Sorted for priority matching
 3. **Position-Based**: Avoids backtracking
 4. **Recursive Parsing**: Only for block elements (alert, blockquote, list-item, task-item)
 5. **Token Merging**: Consolidates consecutive text tokens
+6. **Regex Caching**: Compiled patterns stored in Map per rule
+7. **Hash Sampling**: Large content hashed via sampling for cache keys
 
 ## Security
 
@@ -288,6 +348,39 @@ import { MarkdownRenderer } from '@changerawr/markdown/react';
 ### Custom Extension
 ```typescript
 engine.registerExtension(customExtension);
+```
+
+### Performance APIs
+```typescript
+// Automatic caching (enabled by default)
+const html1 = engine.toHtml(markdown); // Cached automatically
+const html2 = engine.toHtml(markdown); // Instant from cache
+
+// Get cache statistics
+const stats = engine.getCacheStats();
+console.log(stats.parse.hits, stats.render.hitRate);
+
+// Clear caches
+engine.clearCaches();
+
+// Adjust cache size
+engine.setCacheSize(200);
+
+// Get performance metrics
+const { html, metrics } = engine.toHtmlWithMetrics(markdown);
+console.log(metrics.parseTime, metrics.renderTime, metrics.cacheHit);
+
+// Stream large documents
+const html = await engine.toHtmlStreamed(largeMarkdown, {
+  chunkSize: 50,
+  onChunk: ({ html, progress }) => {
+    console.log(`Progress: ${(progress * 100).toFixed(0)}%`);
+  }
+});
+
+// Memoize expensive functions
+import { memoize } from '@changerawr/markdown';
+const cached = memoize((input) => expensiveOperation(input));
 ```
 
 ## Build & Development
