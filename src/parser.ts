@@ -304,7 +304,23 @@ export class MarkdownParser {
 
         if (blockTypes.includes(token.type) && token.content && token.content.trim()) {
             // Recursively parse the content into child tokens
-            const children = this.parse(token.content);
+            // For list-items and task-items, we need to exclude list rules to prevent
+            // dashes in inline content (like "**bold** - text") from being treated as nested list items
+            let children: MarkdownToken[];
+
+            if ((token.type === 'list-item' || token.type === 'task-item') && this.rules.some(r => r.name === 'list-item')) {
+                // Create a parser with the list-item rule excluded
+                const parserWithoutListRule = new MarkdownParser(this.config);
+                this.rules.forEach(rule => {
+                    // Skip list-item rules when parsing inside list items
+                    if (rule.name !== 'list-item' && rule.name !== 'task-item') {
+                        parserWithoutListRule.addRule(rule);
+                    }
+                });
+                children = parserWithoutListRule.parse(token.content);
+            } else {
+                children = this.parse(token.content);
+            }
 
             return {
                 ...token,
