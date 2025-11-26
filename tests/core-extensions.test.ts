@@ -385,7 +385,7 @@ describe('Core Extensions', () => {
             expect(imageToken?.content).toBe('Alt text');
             expect(imageToken?.attributes?.src).toBe('image.jpg');
             expect(imageToken?.attributes?.alt).toBe('Alt text');
-            expect(imageToken?.attributes?.title).toBe('Image title');
+            expect(imageToken?.attributes?.caption).toBe('Image title');
         });
 
         it('should parse images without title', () => {
@@ -394,7 +394,7 @@ describe('Core Extensions', () => {
 
             const imageToken = tokens.find(t => t.type === 'image');
             expect(imageToken).toBeDefined();
-            expect(imageToken?.attributes?.title).toBe('');
+            expect(imageToken?.attributes?.caption).toBe('');
         });
 
         it('should render images with proper attributes', () => {
@@ -470,7 +470,8 @@ describe('Core Extensions', () => {
             };
 
             const html = renderer.render([token]);
-            expect(html).toBe('<li>Test item</li>');
+            expect(html).toContain('<li>Test item</li>');
+            expect(html).toContain('<ul');
         });
 
         it('should parse and render bold formatting within list items', () => {
@@ -493,6 +494,8 @@ describe('Core Extensions', () => {
         beforeEach(() => {
             TaskListExtension.parseRules.forEach(rule => parser.addRule(rule));
             TaskListExtension.renderRules.forEach(rule => renderer.addRule(rule));
+            // Also need ListExtension rules for ul/ol wrapping
+            ListExtension.renderRules.forEach(rule => renderer.addRule(rule));
         });
 
         it('should parse task items correctly', () => {
@@ -515,11 +518,11 @@ describe('Core Extensions', () => {
             };
 
             const html = renderer.render([completedToken]);
-            expect(html).toContain('<input');
-            expect(html).toContain('type="checkbox"');
-            expect(html).toContain('checked');
-            expect(html).toContain('disabled');
+            expect(html).toContain('task-list-item');
             expect(html).toContain('Completed task');
+            expect(html).toContain('line-through');
+            expect(html).toContain('<svg');
+            expect(html).toContain('polyline points="20 6 9 17 4 12"');
         });
 
         it('should render incomplete tasks', () => {
@@ -531,10 +534,10 @@ describe('Core Extensions', () => {
             };
 
             const html = renderer.render([incompleteToken]);
-            expect(html).toContain('<input');
-            expect(html).toContain('type="checkbox"');
-            expect(html).not.toContain('checked');
+            expect(html).toContain('task-list-item');
             expect(html).toContain('Todo task');
+            expect(html).toContain('<svg');
+            expect(html).toContain('rect x="3" y="3"');
         });
     });
 
@@ -802,7 +805,7 @@ const code = "block";
             expect(html).toContain('<img');
             expect(html).toContain('<hr');
             expect(html).toContain('<pre');
-            expect(html).toContain('type="checkbox"');
+            expect(html).toContain('task-list-item');
         });
 
         it('should prioritize more specific patterns', () => {
