@@ -300,7 +300,7 @@ export class MarkdownParser {
 
     private recursivelyParseBlockContent(token: MarkdownToken): MarkdownToken {
         // List of token types that should have their content recursively parsed
-        const blockTypes = ['alert', 'blockquote', 'list-item', 'task-item'];
+        const blockTypes = ['alert', 'blockquote', 'list-item', 'ordered-list-item', 'task-item'];
 
         if (blockTypes.includes(token.type) && token.content && token.content.trim()) {
             // Recursively parse the content into child tokens
@@ -308,12 +308,12 @@ export class MarkdownParser {
             // dashes in inline content (like "**bold** - text") from being treated as nested list items
             let children: MarkdownToken[];
 
-            if ((token.type === 'list-item' || token.type === 'task-item') && this.rules.some(r => r.name === 'list-item')) {
+            if ((token.type === 'list-item' || token.type === 'ordered-list-item' || token.type === 'task-item') && this.rules.some(r => r.name === 'unordered-list-item' || r.name === 'ordered-list-item' || r.name === 'task-item')) {
                 // Create a parser with the list-item rule excluded
                 const parserWithoutListRule = new MarkdownParser(this.config);
                 this.rules.forEach(rule => {
                     // Skip list-item rules when parsing inside list items
-                    if (rule.name !== 'list-item' && rule.name !== 'task-item') {
+                    if (rule.name !== 'unordered-list-item' && rule.name !== 'ordered-list-item' && rule.name !== 'task-item') {
                         parserWithoutListRule.addRule(rule);
                     }
                 });
