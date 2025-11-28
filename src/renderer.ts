@@ -36,8 +36,11 @@ export class MarkdownRenderer {
             }
         }));
 
+        // Group consecutive list items into ul/ol wrappers
+        const groupedTokens = this.groupListItems(tokensWithFormat);
+
         // Render each token using registered extensions
-        const htmlParts = tokensWithFormat.map(token => this.renderToken(token));
+        const htmlParts = groupedTokens.map(token => this.renderToken(token));
         const combinedHtml = htmlParts.join('');
 
         // Apply sanitization if enabled
@@ -48,6 +51,56 @@ export class MarkdownRenderer {
         return combinedHtml;
     }
 
+    private groupListItems(tokens: MarkdownToken[]): MarkdownToken[] {
+        const result: MarkdownToken[] = [];
+        let i = 0;
+
+        while (i < tokens.length) {
+            const token = tokens[i]!;
+            const isListItem = token?.type === 'list-item' || token?.type === 'ordered-list-item' || token?.type === 'task-item';
+
+            if (isListItem) {
+                // Collect all consecutive list items at this level
+                const listItems: MarkdownToken[] = [];
+                const firstItemType = token.type;
+                const isOrdered = firstItemType === 'ordered-list-item';
+
+                while (i < tokens.length) {
+                    const item = tokens[i];
+                    if (!item) break;
+
+                    const itemType = item.type;
+                    const isSameListType = (isOrdered && itemType === 'ordered-list-item') ||
+                                          (!isOrdered && (itemType === 'list-item' || itemType === 'task-item'));
+
+                    if (isSameListType) {
+                        listItems.push(item);
+                        i++;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Wrap list items in ul or ol (only happens once per grouping call)
+                const wrappedList: MarkdownToken = {
+                    type: isOrdered ? 'ol' : 'ul',
+                    content: '',
+                    raw: '',
+                    children: listItems,
+                    attributes: { format: this.config.format }
+                };
+                // Mark as already wrapped to prevent double-wrapping
+                (wrappedList as any)._isWrapped = true;
+                result.push(wrappedList);
+            } else {
+                result.push(token);
+                i++;
+            }
+        }
+
+        return result;
+    }
+
     private renderToken(token: MarkdownToken): string {
         const rule = this.rules.get(token.type);
 
@@ -56,7 +109,12 @@ export class MarkdownRenderer {
                 // If token has children, render them and inject into attributes
                 let tokenToRender = token;
                 if (token.children && token.children.length > 0) {
-                    const renderedChildren = this.render(token.children);
+                    // For wrapper tokens (ul, ol), render children directly without re-grouping
+                    // For other tokens with children, render through full pipeline to handle nested content
+                    const renderedChildren = (token.type === 'ul' || token.type === 'ol')
+                        ? token.children.map(child => this.renderToken(child)).join('')
+                        : this.render(token.children);
+
                     tokenToRender = {
                         ...token,
                         attributes: {

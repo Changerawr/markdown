@@ -9,6 +9,7 @@ import { LinkExtension } from "./links";
 import { ListExtension, TaskListExtension } from "./lists";
 import { ParagraphExtension } from "./paragraph";
 import { TextExtension } from "./text";
+import { StrikethroughExtension } from "./strikethrough";
 
 export const CoreExtensions = [
     TextExtension,
@@ -23,6 +24,7 @@ export const CoreExtensions = [
     TaskListExtension,
     BlockquoteExtension,
     HorizontalRuleExtension,
+    StrikethroughExtension,
     ParagraphExtension,
     LineBreakExtension
 ] as const;
@@ -40,6 +42,7 @@ export {
     TaskListExtension,
     BlockquoteExtension,
     HorizontalRuleExtension,
+    StrikethroughExtension,
     ParagraphExtension,
     LineBreakExtension
 };
