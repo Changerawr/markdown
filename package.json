@@ -1,6 +1,6 @@
 {
   "name": "@changerawr/markdown",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "publishConfig": {
     "access": "public"
   },
@@ -54,7 +54,7 @@
     "./package.json": "./package.json"
   },
   "sideEffects": [
-    "./dist/css/**"
+    ".  /dist/css/**"
   ],
   "files": [
     "dist",

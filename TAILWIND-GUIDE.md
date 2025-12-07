@@ -1,344 +1,214 @@
-# Tailwind Setup Guide
+# Tailwind Setup Guide for @changerawr/markdown
 
-The `@changerawr/markdown` library provides clean Tailwind CSS integration for both v3 and v4. Choose the setup method that matches your Tailwind version.
+This guide explains how to configure Tailwind CSS to work with the `@changerawr/markdown` package.
 
-## 🚀 Quick Setup
+## 🎯 The Problem
 
-### Tailwind v4 (CSS Import Method - Recommended)
+The `@changerawr/markdown` package generates HTML with Tailwind utility classes like `text-3xl`, `font-bold`, `mt-8`, etc. However, Tailwind's JIT compiler only includes classes it finds in your source files. Since the markdown rendering happens at runtime, Tailwind doesn't see these classes and won't generate their CSS.
 
-Tailwind v4 uses CSS imports instead of plugins for better performance and tree-shaking.
+**Result:** Your markdown renders with class names in the HTML, but no actual styles are applied.
 
-**1. Install the package**
+## ✅ The Solution
+
+You need to explicitly tell Tailwind to include the markdown classes using a **safelist**.
+
+### Step 1: Install the Package
 ```bash
 npm install @changerawr/markdown
 ```
 
-**2. Import styles in your main CSS file**
-```css
-@import "tailwindcss";
-@import "@changerawr/markdown/css";
-```
+### Step 2: Import the Safelist
 
-**3. Use markdown components**
-```tsx
-import { MarkdownRenderer } from '@changerawr/markdown/react';
+Update your `tailwind.config.ts`:
+```typescript
+import type { Config } from "tailwindcss";
+import { MARKDOWN_SAFELIST } from '@changerawr/markdown/tailwind';
 
-function App() {
-  return (
-    <MarkdownRenderer content="# Hello **World**!" />
-  );
-}
-```
-
-### Tailwind v3 (Plugin Method)
-
-For Tailwind v3, use the plugin to ensure classes aren't purged.
-
-**1. Install the package**
-```bash
-npm install @changerawr/markdown
-```
-
-**2. Add plugin to your `tailwind.config.js`**
-```javascript
-import { changerawrMarkdownPlugin } from '@changerawr/markdown/tailwind';
-
-export default {
-  content: ['./src/**/*.{js,ts,jsx,tsx}'],
-  plugins: [
-    changerawrMarkdownPlugin({
-      includeExtensions: true,   // Include alert/button styles
-      darkMode: true            // Include dark mode variants
-    })
-  ]
-}
-```
-
-**3. Use markdown components**
-```tsx
-import { MarkdownRenderer } from '@changerawr/markdown/react';
-
-function App() {
-  return (
-    <MarkdownRenderer content="# Hello **World**!" />
-  );
-}
-```
-
-## 🎯 Why You Need This
-
-Without proper setup, Tailwind might purge essential classes like `text-3xl`, `font-bold`, etc. if they're not found in your templates. Our setup ensures these classes are always available for markdown rendering.
-
-## 📂 Project Structure
-
-### Tailwind v4 Structure
-```
-src/
-├── styles/
-│   └── globals.css              # Your main CSS file
-├── components/
-│   └── MarkdownRenderer.tsx
-└── ...
-
-# globals.css
-@import "tailwindcss";
-@import "@changerawr/markdown/css";
-```
-
-### Tailwind v3 Structure
-```
-src/
-├── components/
-│   └── MarkdownRenderer.tsx
-└── ...
-tailwind.config.js               # Plugin configuration
-```
-
-## ⚙️ Configuration Options
-
-### Tailwind v4 (CSS Variables)
-
-Create custom themes using CSS variables:
-
-```css
-@import "tailwindcss";
-
-@layer base {
-  :root {
-    --markdown-primary: theme(colors.blue.600);
-    --markdown-warning: theme(colors.amber.500);
-    --markdown-error: theme(colors.red.500);
-    --markdown-success: theme(colors.green.500);
-  }
-  
-  .dark {
-    --markdown-primary: theme(colors.blue.400);
-    --markdown-warning: theme(colors.amber.400);
-    --markdown-error: theme(colors.red.400);
-    --markdown-success: theme(colors.green.400);
-  }
-}
-
-@import "@changerawr/markdown/css";
-```
-
-### Tailwind v3 (Plugin Options)
-
-```javascript
-import { changerawrMarkdownPlugin } from '@changerawr/markdown/tailwind';
-
-export default {
-  content: ['./src/**/*.{js,ts,jsx,tsx}'],
-  plugins: [
-    changerawrMarkdownPlugin({
-      includeExtensions: false,  // Disable alert/button styles
-      darkMode: false           // Disable dark mode variants
-    })
-  ]
-}
-```
-
-## 🎨 Standard Classes Used
-
-Both setups ensure these standard Tailwind classes are available:
-
-### Typography
-```html
-<h1 class="text-3xl font-bold mt-8 mb-4">Heading 1</h1>
-<h2 class="text-2xl font-semibold mt-6 mb-3">Heading 2</h2>
-<strong class="font-bold">Bold text</strong>
-<em class="italic">Italic text</em>
-```
-
-### Layout & Spacing
-```html
-<div class="flex items-center gap-2">
-<ul class="list-disc list-inside space-y-1">
-  <li class="ml-4">List item</li>
-</ul>
-<blockquote class="border-l-4 pl-4 py-2">Quote</blockquote>
-```
-
-### Extensions (when enabled)
-```html
-<!-- Alert -->
-<div class="border-l-4 p-4 mb-4 rounded-md bg-blue-500/10 border-blue-500/30 text-blue-600">
-  Info alert
-</div>
-
-<!-- Button -->
-<a class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-  Button
-</a>
-```
-
-## 🌙 Dark Mode Support
-
-Both setups include automatic dark mode support:
-
-### Tailwind v4
-```css
-@layer utilities {
-  .dark .text-blue-600 { color: theme(colors.blue.400); }
-  .dark .bg-blue-500\/10 { background-color: color-mix(in srgb, theme(colors.blue.500) 20%, transparent); }
-}
-```
-
-### Tailwind v3
-Automatically included with `darkMode: true` option.
-
-## 🔧 Advanced Customization
-
-### Minimal Setup (Core Only)
-
-**Tailwind v4:**
-```css
-@import "tailwindcss";
-@import "@changerawr/markdown/css/core"; /* Only typography, no extensions */
-```
-
-**Tailwind v3:**
-```javascript
-changerawrMarkdownPlugin({
-  includeExtensions: false  // Only core markdown styles
-})
-```
-
-### Custom Color Scheme
-
-**Tailwind v4:**
-```css
-@layer base {
-  :root {
-    --markdown-primary: #8b5cf6;  /* purple */
-    --markdown-accent: #ec4899;   /* pink */
-  }
-}
-```
-
-**Tailwind v3:**
-Configure through your Tailwind theme colors - the plugin uses standard color names.
-
-## 🚨 Troubleshooting
-
-### Tailwind v4 Issues
-
-**Styles not appearing?**
-```css
-/* ✅ Correct order */
-@import "tailwindcss";
-@import "@changerawr/markdown/css";
-
-/* ❌ Wrong order */
-@import "@changerawr/markdown/css";
-@import "tailwindcss"; /* This overrides our styles */
-```
-
-**Using a bundler?** Make sure CSS imports are properly resolved:
-```javascript
-// vite.config.js
-export default {
-  css: {
-    postcss: './postcss.config.js',
-  }
-}
-```
-
-### Tailwind v3 Issues
-
-**Classes still being purged?**
-```javascript
-// Make sure content paths include markdown components
-module.exports = {
+const config: Config = {
   content: [
-    './src/**/*.{js,ts,jsx,tsx}',
-    './node_modules/@changerawr/markdown/**/*.{js,ts}' // Add if needed
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  safelist: MARKDOWN_SAFELIST, // ✅ Add this line
+  theme: {
+    extend: {
+      // your theme customizations
+    },
+  },
+  plugins: [],
+};
+
+export default config;
+```
+
+### Step 3: Use Markdown Rendering
+```typescript
+import { ChangerawrMarkdown } from '@changerawr/markdown';
+
+const engine = new ChangerawrMarkdown({
+  renderer: { format: 'tailwind' }
+});
+
+const html = engine.toHtml('# Hello **World**!');
+// <h1 class="text-3xl font-bold mt-8 mb-4">Hello <strong class="font-bold">World</strong>!</h1>
+```
+
+That's it! All markdown classes will now be included in your CSS bundle.
+
+## 📋 What Gets Safelisted
+
+The `MARKDOWN_SAFELIST` includes all classes used by the markdown renderer:
+
+- **Typography:** `text-3xl`, `text-2xl`, `font-bold`, `font-semibold`, `italic`, etc.
+- **Spacing:** `mt-8`, `mb-4`, `p-4`, `px-2`, `py-1`, etc.
+- **Layout:** `flex`, `items-center`, `gap-2`, `relative`, `group`, etc.
+- **Lists:** `list-disc`, `list-decimal`, `ml-4`, etc.
+- **Borders:** `border-l-4`, `rounded`, `rounded-lg`, etc.
+- **Colors:** `text-primary`, `text-muted-foreground`, `bg-muted`, etc.
+- **Interactions:** `hover:underline`, `transition-all`, etc.
+- **Extensions:** Alert and button classes (blues, ambers, reds, greens)
+- **Dark Mode:** `dark:text-blue-400`, `dark:bg-gray-800`, etc.
+
+## 🎨 Custom Theme Colors
+
+If you're using custom theme colors (like `border`, `primary`, `muted`), make sure they're defined in your Tailwind config:
+```typescript
+const config: Config = {
+  safelist: MARKDOWN_SAFELIST,
+  theme: {
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        // ... other colors
+      },
+    },
+  },
+};
+```
+
+## 🔧 Advanced: Selective Safelisting
+
+If you want more control over which classes are included, you can import the raw array and filter it:
+```typescript
+import { MARKDOWN_SAFELIST } from '@changerawr/markdown/tailwind';
+
+const config: Config = {
+  safelist: MARKDOWN_SAFELIST.filter(className => {
+    // Exclude dark mode classes if you don't need them
+    return !className.startsWith('dark:');
+  }),
+  // ...
+};
+```
+
+Or create your own safelist by only including what you need:
+```typescript
+const config: Config = {
+  safelist: [
+    'text-3xl', 'text-2xl', 'text-xl', 'text-lg',
+    'font-bold', 'font-semibold',
+    'mt-8', 'mb-4', 'p-4',
+    // ... only the classes you use
   ],
   // ...
 };
 ```
 
-**Plugin not working?** Verify the plugin is imported correctly:
-```javascript
-// ✅ Correct
-import { changerawrMarkdownPlugin } from '@changerawr/markdown/tailwind';
+## ⚠️ Note About the Plugin
 
-// ❌ Wrong
-const plugin = require('@changerawr/markdown/tailwind');
+Earlier versions of this package included a `changerawrMarkdownPlugin`. **This plugin does not work** due to limitations in Tailwind's plugin API - plugins cannot inject safelist configuration.
+
+If you see documentation referencing the plugin, ignore it and use `MARKDOWN_SAFELIST` instead:
+```typescript
+// ❌ Don't use this (it doesn't work)
+plugins: [changerawrMarkdownPlugin()]
+
+// ✅ Use this instead
+safelist: MARKDOWN_SAFELIST
 ```
 
-## 📦 Complete Examples
+## 🐛 Troubleshooting
 
-### Next.js 14+ (App Router) with Tailwind v4
-```javascript
-// tailwind.config.js
-module.exports = {
-  content: ['./src/**/*.{js,ts,jsx,tsx}']
-}
+### Classes are in the HTML but not styled
+
+**Problem:** You see `class="text-3xl font-bold"` in your HTML, but the text isn't large or bold.
+
+**Solution:** You forgot to add `MARKDOWN_SAFELIST` to your Tailwind config. Go back to Step 2.
+
+### Some classes work, others don't
+
+**Problem:** Basic classes like `font-bold` work, but custom color classes like `text-primary` don't.
+
+**Solution:** Make sure you've defined those colors in your theme (see Custom Theme Colors section above).
+
+### Build is slow with safelist
+
+**Problem:** Your Tailwind build is slower after adding the safelist.
+
+**Solution:** This is expected - you're generating more CSS. The safelist includes ~150 classes. If you need fewer, create a custom filtered list (see Advanced section).
+
+### TypeScript errors importing the safelist
+
+**Problem:** `Cannot find module '@changerawr/markdown/tailwind'`
+
+**Solution:** Make sure you've installed the package and that your `tsconfig.json` includes `"moduleResolution": "bundler"` or `"node16"`.
+
+## 📚 Examples
+
+### Next.js App Router
+```typescript
+// tailwind.config.ts
+import type { Config } from "tailwindcss";
+import { MARKDOWN_SAFELIST } from '@changerawr/markdown/tailwind';
+
+const config: Config = {
+  content: ["./app/**/*.{js,ts,jsx,tsx,mdx}"],
+  safelist: MARKDOWN_SAFELIST,
+  theme: { extend: {} },
+  plugins: [],
+};
+
+export default config;
 ```
 
-```css
-/* src/app/globals.css */
-@import "tailwindcss";
-@import "@changerawr/markdown/css";
+### Vite + React
+```typescript
+// tailwind.config.ts
+import type { Config } from "tailwindcss";
+import { MARKDOWN_SAFELIST } from '@changerawr/markdown/tailwind';
+
+const config: Config = {
+  content: ["./src/**/*.{js,ts,jsx,tsx}"],
+  safelist: MARKDOWN_SAFELIST,
+  theme: { extend: {} },
+  plugins: [],
+};
+
+export default config;
 ```
 
-### Next.js 13 (Pages) with Tailwind v3
-```javascript
-// tailwind.config.js
-const { changerawrMarkdownPlugin } = require('@changerawr/markdown/tailwind');
+## 💡 Why This Approach?
 
-module.exports = {
-  content: ['./pages/**/*.{js,ts,jsx,tsx}', './components/**/*.{js,ts,jsx,tsx}'],
-  plugins: [changerawrMarkdownPlugin()]
-}
-```
+You might wonder why we use a safelist instead of having Tailwind scan the markdown package's code. Here's why:
 
-### Vite + React with Tailwind v4
-```javascript
-// vite.config.js
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+1. **The markdown renderer generates HTML at runtime** - Tailwind can't see it during build
+2. **Classes are in JavaScript strings** - Tailwind's scanner doesn't parse string concatenation
+3. **Safelist is the official Tailwind solution** for dynamic/runtime-generated classes
 
-export default defineConfig({
-  plugins: [react()],
-  css: {
-    postcss: './postcss.config.js',
-  }
-})
-```
+This is the same approach used by:
+- CMS systems with user-generated content
+- Dynamic theme builders
+- Any library that generates HTML with Tailwind classes at runtime
 
-```css
-/* src/index.css */
-@import "tailwindcss";
-@import "@changerawr/markdown/css";
-```
+---
 
-## 🌟 Migration Guide
-
-### From v3 Plugin to v4 CSS
-
-1. **Remove plugin from config:**
-   ```diff
-   - plugins: [changerawrMarkdownPlugin()]
-   ```
-
-2. **Add CSS import:**
-   ```diff
-   + @import "@changerawr/markdown/css";
-   ```
-
-3. **Update build process** to handle CSS imports properly
-
-### Benefits of Each Approach
-
-**Tailwind v4 (CSS):**
-- ✅ Better tree-shaking
-- ✅ Faster builds
-- ✅ More explicit dependencies
-- ✅ Works with any bundler
-
-**Tailwind v3 (Plugin):**
-- ✅ Familiar plugin system
-- ✅ Dynamic configuration
-- ✅ Existing ecosystem support
+**Questions or issues?** Open an issue on the [@changerawr/markdown GitHub repository](https://github.com/changerawr/markdown).
