@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsup';
-import { cpSync, existsSync } from 'fs';
+import { cpSync, existsSync, mkdirSync, copyFileSync } from 'fs';
 
 async function copyTailwindCSS() {
     if (!existsSync('src/css')) return;
@@ -8,6 +8,16 @@ async function copyTailwindCSS() {
         console.log('✅ Copied Tailwind CSS assets to dist/css');
     } catch (err) {
         console.error('❌ Failed to copy Tailwind CSS:', err);
+    }
+}
+
+async function copyAstroFiles() {
+    try {
+        mkdirSync('dist/astro', { recursive: true });
+        copyFileSync('src/astro/MarkdownRenderer.astro', 'dist/astro/MarkdownRenderer.astro');
+        console.log('✅ Copied Astro component to dist/astro');
+    } catch (err) {
+        console.error('❌ Failed to copy Astro component:', err);
     }
 }
 
@@ -38,6 +48,18 @@ export default defineConfig([
         dts: true,
         sourcemap: true,
         external: ['tailwindcss'],
+    },
+    {
+        entry: ['src/astro/index.ts'],
+        outDir: 'dist/astro',
+        format: ['cjs', 'esm'],
+        dts: true,
+        sourcemap: true,
+        // dompurify is used server-side in Astro SSR — don't bundle it
+        external: ['dompurify'],
+        onSuccess: async () => {
+            await copyAstroFiles();
+        },
     },
     {
         entry: ['src/standalone.ts'],

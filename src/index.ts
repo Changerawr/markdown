@@ -51,7 +51,11 @@ export type {
     ParseRule,
     RenderRule,
     Extension,
-    TokenType
+    TokenType,
+    // Component extension types
+    ComponentTokenProps,
+    ComponentRenderRule,
+    ComponentExtension
 } from './types';
 
 // Configuration types

@@ -255,23 +255,20 @@ The main component for rendering markdown:
 
 ## 🔧 Custom Extensions
 
-Create powerful custom extensions to extend markdown syntax:
+Extensions are the building block of the entire library — every feature, including all the built-ins, is an extension. You can add new syntax, replace existing behaviour, or attach full React components for framework-specific rendering while keeping a plain-HTML fallback for everywhere else.
 
 ```typescript
-import { ChangerawrMarkdown } from '@changerawr/markdown';
+import { createEngine } from '@changerawr/markdown';
 
-const engine = new ChangerawrMarkdown();
-
-// Add a highlight extension
-const highlightExtension = {
+const HighlightExtension = {
   name: 'highlight',
   parseRules: [{
     name: 'highlight',
-    pattern: /==(.+?)==/g,
+    pattern: /==(.+?)==/,
     render: (match) => ({
       type: 'highlight',
-      content: match[1],
-      raw: match[0]
+      content: match[1] ?? '',
+      raw: match[0] ?? '',
     })
   }],
   renderRules: [{
@@ -280,11 +277,16 @@ const highlightExtension = {
   }]
 };
 
-engine.registerExtension(highlightExtension);
+const engine = createEngine();
+engine.registerExtension(HighlightExtension);
 
-const html = engine.toHtml('This is ==highlighted text==');
-// <mark class="bg-yellow-200 px-1">highlighted text</mark>
+engine.toHtml('This is ==highlighted text==');
+// Works in React, Astro, vanilla JS, Node — everywhere.
 ```
+
+**[Full extension documentation →](./EXTENSIONS.md)**
+
+The guide covers: block extensions, inline extensions, passing attributes, component extensions with React state and lifecycle, Astro compatibility, priority ordering, TypeScript types, and a complete worked example.
 
 ## 🎯 Advanced Configuration
 
@@ -632,6 +634,7 @@ npm run test:coverage   # Run with coverage report
 ### React Hooks
 
 - `useMarkdown(content: string, options?)` - Main markdown processing hook
+- `useMarkdownComponents(content: string, options?)` - Hook for component extensions (returns `componentMap` + `renderBatch`)
 - `useMarkdownEngine(options?)` - Engine management hook
 - `useMarkdownDebug(content: string)` - Debug information hook
 
@@ -645,7 +648,13 @@ npm run test:coverage   # Run with coverage report
 
 - **Core Extensions**: `CoreExtensions` array or individual exports
 - **Feature Extensions**: `AlertExtension`, `ButtonExtension`, `EmbedExtension`
-- **Custom**: Create your own with `parseRules` and `renderRules`
+- **Custom**: Create your own with `parseRules` and `renderRules` — [see the extension guide](./EXTENSIONS.md)
+- **Component Extensions**: Attach React components to render rules via `ReactComponentExtension` (with universal string fallback for Astro, HTML, etc.)
+
+### Astro
+
+- `renderMarkdownForAstro(content, options?)` — server-side render to HTML string
+- `<MarkdownRenderer />` — zero-JS Astro component (`@changerawr/markdown/astro/MarkdownRenderer.astro`)
 
 ## 🤝 Contributing
 

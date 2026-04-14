@@ -1,0 +1,31 @@
+---
+/**
+ * @changerawr/markdown — Astro MarkdownRenderer component
+ *
+ * Usage:
+ *   import MarkdownRenderer from '@changerawr/markdown/astro/MarkdownRenderer.astro';
+ *
+ *   <MarkdownRenderer content={post.body} format="tailwind" class="prose" />
+ *
+ * The component renders markdown server-side at build / SSR time — zero client JS.
+ */
+import { renderMarkdownForAstro } from '@changerawr/markdown/astro';
+import type { AstroMarkdownRendererProps } from '@changerawr/markdown/astro';
+
+type Props = AstroMarkdownRendererProps;
+
+const {
+    content,
+    format = 'html',
+    class: className,
+    config,
+    extensions,
+} = Astro.props;
+
+const html = renderMarkdownForAstro(content, { format, config, extensions });
+---
+
+<div
+    class:list={['changerawr-markdown', className]}
+    set:html={html}
+/>

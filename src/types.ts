@@ -27,6 +27,42 @@ export interface Extension {
     renderRules: RenderRule[];
 }
 
+// ---- Component Extension System ----
+
+/**
+ * Props passed to a framework component registered on a ComponentRenderRule.
+ * The `children` type is intentionally `unknown` here — each framework binding
+ * (React, Astro, etc.) narrows it to the correct type in its own module.
+ */
+export interface ComponentTokenProps {
+    token: MarkdownToken;
+    /** Pre-rendered children (framework-specific ReactNode, Astro.slots, etc.) */
+    children?: unknown;
+}
+
+/**
+ * A render rule that optionally carries a framework component.
+ * The `render` function is always required as a string-output fallback used by
+ * HTML / Tailwind / JSON / Astro outputs.  Framework renderers (React, etc.)
+ * will prefer `component` when present.
+ */
+export interface ComponentRenderRule extends RenderRule {
+    /**
+     * Framework component (React.ComponentType, Svelte component, etc.).
+     * Typed as `unknown` here; each framework module provides a narrowed variant.
+     */
+    component?: unknown;
+}
+
+/**
+ * An Extension that may carry framework components on its render rules.
+ * It is fully compatible with the base `Extension` type and can be registered
+ * with the engine like any regular extension — the engine only uses `render`.
+ */
+export interface ComponentExtension extends Extension {
+    renderRules: ComponentRenderRule[];
+}
+
 // Output format types
 export type OutputFormat = 'html' | 'tailwind' | 'json';
 

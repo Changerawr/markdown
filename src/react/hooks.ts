@@ -7,9 +7,11 @@ import type {
     MarkdownDebugInfo,
     EngineConfig,
     RendererConfig,
-    OutputFormat
+    OutputFormat,
+    ReactComponentExtension,
+    ReactComponentRenderRule
 } from './types';
-import type { MarkdownToken } from '../types';
+import type { MarkdownToken, Extension } from '../types';
 
 /**
  * Main hook for rendering markdown content
@@ -59,9 +61,17 @@ export function useMarkdown(
             });
         }
 
+        // Register component extensions (they satisfy the Extension interface;
+        // the engine uses their string `render` fallback)
+        if (options.componentExtensions) {
+            options.componentExtensions.forEach(ext => {
+                newEngine.registerExtension(ext as unknown as Extension);
+            });
+        }
+
         engineRef.current = newEngine;
         return newEngine;
-    }, [options.config, options.format, options.debug, options.extensions]);
+    }, [options.config, options.format, options.debug, options.extensions, options.componentExtensions]);
 
     // Process markdown content
     const processMarkdown = useCallback((markdownContent: string) => {
@@ -130,6 +140,12 @@ export function useMarkdown(
         setDebug(null);
     }, []);
 
+    // Render an arbitrary token batch to HTML — used by TokenTreeRenderer for
+    // non-component token groups without going through the parse step again.
+    const renderBatch = useCallback((batch: MarkdownToken[]): string => {
+        return engine.render(batch);
+    }, [engine]);
+
     return {
         html,
         tokens,
@@ -137,7 +153,8 @@ export function useMarkdown(
         error,
         debug,
         render,
-        clear
+        clear,
+        renderBatch
     };
 }
 
@@ -238,4 +255,49 @@ export function useMarkdownDebug(content: string) {
             contentLength: content.length
         }
     };
+}
+
+/**
+ * Hook for rendering markdown with React component extensions (TipTap-style).
+ *
+ * Returns the same values as `useMarkdown` plus:
+ * - `componentMap` — Map<tokenType, ReactComponentRenderRule> for TokenTreeRenderer
+ *
+ * @example
+ * ```tsx
+ * const CardExtension: ReactComponentExtension = {
+ *   name: 'card',
+ *   parseRules: [{ name: 'card', pattern: /:::card\n([\s\S]*?)\n:::/, render: (m) => ({ type: 'card', content: m[1] ?? '', raw: m[0] ?? '' }) }],
+ *   renderRules: [{
+ *     type: 'card',
+ *     component: ({ token, children }) => <div className="card">{children}</div>,
+ *     render: (token) => `<div class="card">${token.content}</div>`
+ *   }]
+ * };
+ *
+ * const { tokens, componentMap, renderBatch } = useMarkdownComponents(content, { componentExtensions: [CardExtension] });
+ * ```
+ */
+export function useMarkdownComponents(
+    content: string,
+    options: UseMarkdownOptions & { componentExtensions?: ReactComponentExtension[] } = {}
+) {
+    const result = useMarkdown(content, options);
+
+    // Build a stable component map from the provided component extensions
+    const componentMap = useMemo(() => {
+        const map = new Map<string, ReactComponentRenderRule>();
+        if (options.componentExtensions) {
+            for (const ext of options.componentExtensions) {
+                for (const rule of ext.renderRules) {
+                    if (rule.component) {
+                        map.set(rule.type, rule);
+                    }
+                }
+            }
+        }
+        return map;
+    }, [options.componentExtensions]);
+
+    return { ...result, componentMap };
 }

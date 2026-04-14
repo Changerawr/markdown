@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
-import { useMarkdown } from './hooks';
+import { useMarkdownComponents } from './hooks';
+import { TokenTreeRenderer } from './ComponentRenderer';
 import type { MarkdownRendererProps, UseMarkdownOptions } from './types';
 
 /**
@@ -26,6 +27,7 @@ export function MarkdownRenderer({
                                      onRender,
                                      onError,
                                      extensions,
+                                     componentExtensions,
                                      sanitize = true,
                                      allowUnsafeHtml = false,
                                      ...restProps
@@ -63,16 +65,29 @@ export function MarkdownRenderer({
             };
         }
 
-        // Add extensions if provided
         if (extensions) {
             options.extensions = extensions;
         }
 
-        return options;
-    }, [config, format, debug, extensions, sanitize, allowUnsafeHtml]);
+        if (componentExtensions) {
+            options.componentExtensions = componentExtensions;
+        }
 
-    // Use the markdown hook
-    const { html, tokens, isLoading, error } = useMarkdown(content, markdownOptions);
+        return options;
+    }, [config, format, debug, extensions, componentExtensions, sanitize, allowUnsafeHtml]);
+
+    // When component extensions are present, use the component-aware hook so we
+    // can walk the token tree and render React components alongside HTML chunks.
+    const hasComponentExtensions = componentExtensions && componentExtensions.length > 0;
+
+    const {
+        html,
+        tokens,
+        isLoading,
+        error,
+        renderBatch,
+        componentMap
+    } = useMarkdownComponents(content, markdownOptions);
 
     // Call onRender callback when rendering completes
     useEffect(() => {
@@ -99,7 +114,6 @@ export function MarkdownRenderer({
             return <>{errorFallback(error)}</>;
         }
 
-        // Default error display
         return (
             <div className="changerawr-error bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                 <div className="font-medium">Markdown Render Error</div>
@@ -108,16 +122,31 @@ export function MarkdownRenderer({
         );
     }
 
-    // Prepare wrapper props
+    const wrapperClassName = className
+        ? `${className} changerawr-markdown`
+        : 'changerawr-markdown';
+
+    // Component-extension path: render a React element tree instead of raw HTML
+    if (hasComponentExtensions && componentMap.size > 0) {
+        return React.createElement(
+            Component,
+            { ...wrapperProps, ...restProps, className: wrapperClassName },
+            <TokenTreeRenderer
+                tokens={tokens}
+                componentMap={componentMap}
+                renderBatch={renderBatch}
+            />
+        );
+    }
+
+    // Default path: dangerouslySetInnerHTML (no component extensions active)
     const finalWrapperProps = {
         ...wrapperProps,
         ...restProps,
-        className: className ?
-            `${className} changerawr-markdown` : 'changerawr-markdown',
+        className: wrapperClassName,
         dangerouslySetInnerHTML: { __html: html }
     };
 
-    // Render the component
     return React.createElement(Component, finalWrapperProps);
 }
 

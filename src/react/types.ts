@@ -10,8 +10,43 @@ export type {
     RendererConfig,
     ParserConfig,
     DebugInfo,
-    PerformanceMetrics
+    PerformanceMetrics,
+    ComponentTokenProps,
+    ComponentRenderRule,
+    ComponentExtension
 } from '../types';
+
+// ---- React-specific component extension types ----
+
+/**
+ * Props passed to a React component registered on a ReactComponentRenderRule.
+ */
+export interface ReactComponentTokenProps {
+    token: MarkdownToken;
+    /** Rendered children as React nodes (nil when the token has no children) */
+    children?: React.ReactNode;
+}
+
+/**
+ * A render rule that optionally carries a React component.
+ */
+export interface ReactComponentRenderRule {
+    type: string;
+    /** React component used by the React renderer when present. */
+    component?: React.ComponentType<ReactComponentTokenProps>;
+    /** String fallback — used by HTML / Tailwind / Astro renderers. */
+    render: (token: MarkdownToken) => string;
+}
+
+/**
+ * A ComponentExtension with React components attached to its render rules.
+ * Compatible with the base Extension interface — pass directly to createEngine().
+ */
+export interface ReactComponentExtension {
+    name: string;
+    parseRules: import('../types').ParseRule[];
+    renderRules: ReactComponentRenderRule[];
+}
 
 /**
  * Props for the MarkdownRenderer component
@@ -53,6 +88,13 @@ export interface MarkdownRendererProps {
     /** Custom extensions to register */
     extensions?: Extension[];
 
+    /**
+     * Component extensions — extensions whose render rules carry React components.
+     * When provided the renderer switches from dangerouslySetInnerHTML to a React
+     * element tree, giving component-rendered tokens full React lifecycle support.
+     */
+    componentExtensions?: ReactComponentExtension[];
+
     /** Whether to sanitize HTML output */
     sanitize?: boolean;
 
@@ -75,6 +117,9 @@ export interface UseMarkdownOptions {
 
     /** Custom extensions */
     extensions?: Extension[];
+
+    /** Component extensions (React-component-bearing extensions) */
+    componentExtensions?: ReactComponentExtension[];
 
     /** Debounce delay in milliseconds */
     debounceMs?: number;
@@ -107,6 +152,12 @@ export interface UseMarkdownResult {
 
     /** Clear current state */
     clear: () => void;
+
+    /**
+     * Render an arbitrary batch of tokens to an HTML string using the current engine.
+     * Used internally by TokenTreeRenderer to render non-component token groups.
+     */
+    renderBatch: (tokens: MarkdownToken[]) => string;
 }
 
 /**
