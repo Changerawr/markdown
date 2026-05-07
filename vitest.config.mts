@@ -9,14 +9,14 @@ export default defineConfig({
         testTimeout: 300000, // 5 minutes for performance tests
         hookTimeout: 300000, // 5 minutes for hooks
         teardownTimeout: 300000, // 5 minutes for teardown
-        pool: 'forks',
+        pool: 'threads', // Use threads instead of forks for better performance
         poolOptions: {
-            forks: {
-                singleFork: false,
-                isolate: false, // Reduce overhead for faster communication
+            threads: {
+                singleThread: false,
+                isolate: false,
             },
         },
-        maxConcurrency: 5, // Limit concurrent tests to prevent timeout issues
+        maxConcurrency: 3, // Reduce concurrency to prevent overwhelming the worker
         coverage: {
             reporter: ['text', 'json', 'html'],
             exclude: [
