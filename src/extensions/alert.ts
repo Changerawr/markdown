@@ -10,7 +10,8 @@ export const AlertExtension: Extension = {
     parseRules: [
         {
             name: 'alert',
-            pattern: /:::(\w+)(?: ([^\n]+))?\n([\s\S]*?)\n:::/,
+            // Only match specific alert types, not any word
+            pattern: /:::(info|warning|error|success|tip|note)(?: ([^\n]+))?\n([\s\S]*?)\n:::/,
             render: (match: RegExpMatchArray) => {
                 return {
                     type: 'alert',

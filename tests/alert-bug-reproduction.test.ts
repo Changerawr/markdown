@@ -82,4 +82,44 @@ Use the \`console.log()\` function to debug.
         expect(html).toContain('console.log()');
         expect(html).not.toContain('`console.log()`');
     });
+
+    it('should NOT match spoiler syntax - only specific alert types', () => {
+        // This tests the fix for the bug where :::spoiler was being matched by alert extension
+        const markdown = `:::spoiler
+This should NOT be rendered as an alert
+:::`;
+
+        const html = engine.toHtml(markdown);
+        console.log('Spoiler (should not be alert) HTML:', html);
+
+        // Should NOT contain alert markup
+        expect(html).not.toContain('role="alert"');
+        expect(html).not.toContain('aria-live="polite"');
+
+        // Should contain the raw spoiler syntax (since spoiler extension isn't loaded in this test)
+        expect(html).toContain(':::spoiler');
+    });
+
+    it('should only match valid alert types', () => {
+        const validTypes = ['info', 'warning', 'error', 'success', 'tip', 'note'];
+
+        validTypes.forEach(type => {
+            const markdown = `:::${type}
+Test content
+:::`;
+            const html = engine.toHtml(markdown);
+
+            // Should render as alert
+            expect(html).toContain('role="alert"');
+        });
+
+        // Invalid type should NOT render as alert
+        const invalidMarkdown = `:::invalidtype
+This should not be an alert
+:::`;
+        const html = engine.toHtml(invalidMarkdown);
+
+        // Should NOT contain alert markup
+        expect(html).not.toContain('role="alert"');
+    });
 });
