@@ -13,8 +13,10 @@ export default defineConfig({
         poolOptions: {
             forks: {
                 singleFork: false,
+                isolate: false, // Reduce overhead for faster communication
             },
         },
+        maxConcurrency: 5, // Limit concurrent tests to prevent timeout issues
         coverage: {
             reporter: ['text', 'json', 'html'],
             exclude: [
