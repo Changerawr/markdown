@@ -286,7 +286,37 @@ engine.toHtml('This is ==highlighted text==');
 
 **[Full extension documentation →](./EXTENSIONS.md)**
 
-The guide covers: block extensions, inline extensions, passing attributes, component extensions with React state and lifecycle, Astro compatibility, priority ordering, TypeScript types, and a complete worked example.
+The guide covers: block extensions, inline extensions, passing attributes, **recursive content parsing**, component extensions with React state and lifecycle, Astro compatibility, priority ordering, TypeScript types, and complete worked examples.
+
+### Recursive Content Parsing (New in v1.3.0)
+
+Extensions can now opt-in to recursive markdown parsing inside their blocks using `recursiveContent: true`:
+
+```typescript
+const CalloutExtension = {
+  name: 'callout',
+  parseRules: [{
+    name: 'callout',
+    pattern: /::callout\n([\s\S]*?)\n::callout/,
+    recursiveContent: true,  // Nested markdown will be parsed and rendered
+    render: (match) => ({
+      type: 'callout',
+      content: match[1]?.trim() ?? '',
+      raw: match[0] ?? '',
+    })
+  }],
+  renderRules: [{
+    type: 'callout',
+    render: (token) => {
+      // Use pre-rendered children
+      const content = token.attributes?.renderedChildren || token.content;
+      return `<div class="callout">${content}</div>`;
+    }
+  }]
+};
+```
+
+This allows **bold**, *italic*, lists, and other markdown to render correctly inside custom block extensions. See [EXTENSIONS.md](./EXTENSIONS.md#recursive-content-parsing) for full details.
 
 ## 🎯 Advanced Configuration
 

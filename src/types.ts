@@ -12,6 +12,7 @@ export interface ParseRule {
     name: string;
     pattern: RegExp;
     render: (match: RegExpMatchArray) => MarkdownToken;
+    recursiveContent?: boolean;  // Flag to enable recursive parsing of content
 }
 
 // Render rule for converting tokens to output format

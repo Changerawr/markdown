@@ -189,6 +189,100 @@ renderRules: [{
 
 ---
 
+## Recursive content parsing
+
+By default, block extensions capture raw text content — the parser doesn't recursively process markdown inside them. For some extensions this is correct behavior (code blocks shouldn't parse inner markdown), but for others you want the content to be processed as markdown.
+
+To enable recursive parsing, add `recursiveContent: true` to your parse rule:
+
+```typescript
+import type { Extension } from '@changerawr/markdown';
+
+const SpoilerExtension: Extension = {
+  name: 'spoiler',
+  parseRules: [{
+    name: 'spoiler',
+    pattern: /:::spoiler(?:\{([^}]+)\})?(?: ([^\n]+))?\n([\s\S]*?)\n:::/,
+    recursiveContent: true,  // Enable recursive markdown parsing
+    render: (match) => ({
+      type: 'spoiler',
+      content: match[3]?.trim() ?? '',
+      raw: match[0] ?? '',
+      attributes: {
+        color: match[1]?.trim() ?? 'default',
+        title: match[2]?.trim() ?? 'Click to reveal spoiler',
+      },
+    }),
+  }],
+  renderRules: [{
+    type: 'spoiler',
+    render: (token) => {
+      const title = token.attributes?.title ?? 'Spoiler';
+
+      // Use pre-rendered children if available (injected by renderer)
+      const renderedChildren = token.attributes?.renderedChildren as string | undefined;
+      const content = renderedChildren || token.content;
+
+      return `<details>
+        <summary>${title}</summary>
+        <div>${content}</div>
+      </details>`;
+    },
+  }],
+};
+```
+
+When `recursiveContent: true` is set:
+
+1. The parser captures the content as usual
+2. Before rendering, the parser recursively processes the content as markdown
+3. The renderer pre-renders the child tokens and injects them as `renderedChildren` in the token's attributes
+4. Your render rule uses `renderedChildren` if available, falling back to raw `content`
+
+### Example markdown with recursive parsing
+
+```markdown
+:::spoiler Major Plot Twist
+The main character discovers:
+
+1. They have **superpowers**
+2. Their *best friend* is a villain
+3. Everything is a `simulation`
+
+> Mind = Blown
+:::
+```
+
+With `recursiveContent: true`, the bold text, italic text, inline code, ordered list, and blockquote will all render correctly inside the spoiler block.
+
+### When to use recursive parsing
+
+**Use `recursiveContent: true` for:**
+- Alert boxes, callouts, and notices
+- Collapsible/expandable sections
+- Tabbed content
+- Custom block containers that wrap other markdown
+
+**Don't use it for:**
+- Code blocks (you want literal text)
+- Math blocks (need special parsing)
+- Raw HTML blocks
+- Any block where inner content shouldn't be interpreted as markdown
+
+### Core extensions with recursive parsing
+
+These core/built-in extensions automatically have recursive content parsing enabled:
+
+- `alert` - Info, warning, error, success alerts
+- `blockquote` - Quote blocks
+- `list-item` - Unordered list items
+- `ordered-list-item` - Ordered list items
+- `task-item` - Task list items with checkboxes
+
+Custom extensions opt-in explicitly with the `recursiveContent` flag.
+
+---
+
 ## Component extensions
 
 Plain string rendering covers most cases. But some things genuinely can't be expressed as a string: local state, animations, refs, portals, React context, third-party component libraries. Component extensions solve this by letting you attach a real React component to any token type — while still requiring a plain string fallback for every other output target.

@@ -5,6 +5,7 @@ export class MarkdownParser {
     private warnings: string[] = [];
     private config: ParserConfig;
     private compiledPatterns = new Map<ParseRule, RegExp>(); // Cache compiled regexes
+    private recursiveContentTypes = new Map<string, boolean>(); // Track which token types need recursive parsing
 
     constructor(config?: ParserConfig) {
         this.config = {
@@ -22,6 +23,10 @@ export class MarkdownParser {
             rule,
             new RegExp(rule.pattern.source, rule.pattern.flags.replace('g', ''))
         );
+        // Track if this rule needs recursive content parsing
+        if (rule.recursiveContent) {
+            this.recursiveContentTypes.set(rule.name, true);
+        }
         // Sort by priority - extensions should define their own priority
         this.rules.sort((a, b) => {
             // Feature extensions first (alert, button, embed) - they have more specific patterns
@@ -149,9 +154,15 @@ export class MarkdownParser {
                 // Process the match
                 try {
                     const token = rule.render(match);
+                    // Mark token if it needs recursive parsing
+                    const needsRecursiveParsing = rule.recursiveContent || false;
                     tokens.push({
                         ...token,
-                        raw: match[0] || ''
+                        raw: match[0] || '',
+                        attributes: {
+                            ...token.attributes,
+                            _recursiveContent: needsRecursiveParsing
+                        }
                     });
 
                     remaining = remaining.slice(match[0]?.length || 0);
@@ -299,10 +310,12 @@ export class MarkdownParser {
     }
 
     private recursivelyParseBlockContent(token: MarkdownToken): MarkdownToken {
-        // List of token types that should have their content recursively parsed
-        const blockTypes = ['alert', 'blockquote', 'list-item', 'ordered-list-item', 'task-item'];
+        // Check if this token type should have its content recursively parsed
+        // This can be set via the recursiveContent flag on the parse rule, or hardcoded for core types
+        const coreBlockTypes = ['alert', 'blockquote', 'list-item', 'ordered-list-item', 'task-item'];
+        const needsRecursiveParsing = token.attributes?._recursiveContent === true || coreBlockTypes.includes(token.type);
 
-        if (blockTypes.includes(token.type) && token.content && token.content.trim()) {
+        if (needsRecursiveParsing && token.content && token.content.trim()) {
             // Recursively parse the content into child tokens
             // For list-items and task-items, we need to exclude list rules to prevent
             // dashes in inline content (like "**bold** - text") from being treated as nested list items
