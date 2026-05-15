@@ -27,42 +27,78 @@ export class MarkdownParser {
         if (rule.recursiveContent) {
             this.recursiveContentTypes.set(rule.name, true);
         }
-        // Sort by priority - extensions should define their own priority
+        // Sort by priority - use explicit priority if provided, otherwise calculate automatically
         this.rules.sort((a, b) => {
-            // Feature extensions first (alert, button, embed) - they have more specific patterns
-            const aFeatureExtension = ['alert', 'button', 'embed'].includes(a.name);
-            const bFeatureExtension = ['alert', 'button', 'embed'].includes(b.name);
+            // Use explicit priority if set, otherwise calculate from pattern
+            const aPriority = a.priority !== undefined ? a.priority : this.calculatePatternPriority(a);
+            const bPriority = b.priority !== undefined ? b.priority : this.calculatePatternPriority(b);
 
-            if (aFeatureExtension && !bFeatureExtension) return -1;
-            if (!aFeatureExtension && bFeatureExtension) return 1;
+            // Higher priority goes first
+            if (aPriority !== bPriority) {
+                return bPriority - aPriority;
+            }
 
-            // Core extensions next
-            const aCoreExtension = ['text', 'heading', 'bold', 'italic', 'code', 'codeblock', 'link', 'image', 'list', 'task-list', 'blockquote', 'hr', 'paragraph', 'line-break'].includes(a.name);
-            const bCoreExtension = ['text', 'heading', 'bold', 'italic', 'code', 'codeblock', 'link', 'image', 'list', 'task-list', 'blockquote', 'hr', 'paragraph', 'line-break'].includes(b.name);
-
-            if (aCoreExtension && !bCoreExtension) return -1;
-            if (!aCoreExtension && bCoreExtension) return 1;
-
-            // Within same category, specific ordering
-            // Images before links (more specific pattern)
-            if (a.name === 'image' && b.name === 'link') return -1;
-            if (a.name === 'link' && b.name === 'image') return 1;
-
-            // Task lists before regular lists
-            if (a.name === 'task-item' && b.name === 'list-item') return -1;
-            if (a.name === 'list-item' && b.name === 'task-item') return 1;
-
-            // Code blocks before inline code
-            if (a.name === 'codeblock' && b.name === 'code') return -1;
-            if (a.name === 'code' && b.name === 'codeblock') return 1;
-
-            // Bold before italic
-            if (a.name === 'bold' && b.name === 'italic') return -1;
-            if (a.name === 'italic' && b.name === 'bold') return 1;
-
-            // Then alphabetical
+            // If same priority, alphabetical for consistency
             return a.name.localeCompare(b.name);
         });
+    }
+
+    /**
+     * Calculate pattern priority automatically based on pattern complexity
+     * Higher priority = more specific pattern = processed first
+     *
+     * Algorithm analyzes:
+     * - Pattern length and specificity
+     * - Multi-line vs single-line
+     * - Literal character sequences
+     * - Anchors and boundaries
+     * - Repetition specificity
+     */
+    private calculatePatternPriority(rule: ParseRule): number {
+        const pattern = rule.pattern.source;
+        let score = 100; // Base score
+
+        // 1. Multi-line patterns get higher priority (more specific context)
+        const isMultiLine = /\\n|[\s\S]/.test(pattern);
+        if (isMultiLine) {
+            score += 500;
+        }
+
+        // 2. Count literal character sequences (non-regex chars)
+        // More literals = more specific pattern
+        const literalChars = pattern.replace(/\\[^a-zA-Z0-9]|[\[\](){}|^$.*+?]/g, '');
+        score += literalChars.length * 10;
+
+        // 3. Consecutive literal sequences (e.g., ":::", "```", "==")
+        const consecutiveLiterals = pattern.match(/[a-zA-Z0-9:=`!@#$%&_-]{2,}/g) || [];
+        score += consecutiveLiterals.reduce((sum, seq) => sum + (seq.length * 20), 0);
+
+        // 4. Anchors increase specificity
+        if (pattern.startsWith('^')) score += 100; // Start anchor
+        if (pattern.endsWith('$')) score += 100; // End anchor
+
+        // 5. Word boundaries increase specificity
+        const boundaryCount = (pattern.match(/\\b/g) || []).length;
+        score += boundaryCount * 30;
+
+        // 6. Specific quantifiers are better than greedy wildcards
+        const greedyWildcards = (pattern.match(/\.\*|\.\+/g) || []).length;
+        score -= greedyWildcards * 50; // Penalty for greedy matching
+
+        // 7. Character classes with negation are more specific
+        const negatedClasses = (pattern.match(/\[\^[^\]]+\]/g) || []).length;
+        score += negatedClasses * 40;
+
+        // 8. Lookaheads/lookbehinds are very specific
+        const lookarounds = (pattern.match(/\(\?[=!<]/g) || []).length;
+        score += lookarounds * 100;
+
+        // 9. Fallback patterns (very generic) get lowest priority
+        if (rule.name === 'text' || rule.name === 'paragraph' || rule.name === 'line-break') {
+            score = 10; // Override to very low
+        }
+
+        return Math.max(0, score); // Ensure non-negative
     }
 
     hasRule(name: string): boolean {

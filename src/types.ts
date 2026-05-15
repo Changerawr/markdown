@@ -13,6 +13,7 @@ export interface ParseRule {
     pattern: RegExp;
     render: (match: RegExpMatchArray) => MarkdownToken;
     recursiveContent?: boolean;  // Flag to enable recursive parsing of content
+    priority?: number;  // Optional explicit priority (higher = processed first). If not set, calculated automatically.
 }
 
 // Render rule for converting tokens to output format
