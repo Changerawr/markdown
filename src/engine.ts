@@ -124,6 +124,9 @@ export class ChangerawrMarkdown {
                 this.renderer.addRule(rule);
             });
 
+            // Register extension with renderer for post-processing hooks
+            this.renderer.addExtension(extension);
+
             return {
                 success: true,
                 extensionName: extension.name
@@ -371,6 +374,9 @@ export class ChangerawrMarkdown {
             extension.renderRules.forEach(rule => {
                 this.renderer.addRule(rule);
             });
+
+            // Register extension with renderer for post-processing hooks
+            this.renderer.addExtension(extension);
         });
     }
 }

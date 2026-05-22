@@ -27,6 +27,7 @@ export interface Extension {
     name: string;
     parseRules: ParseRule[];
     renderRules: RenderRule[];
+    postProcessHtml?: (html: string) => string;  // Optional HTML post-processing hook
 }
 
 // ---- Component Extension System ----

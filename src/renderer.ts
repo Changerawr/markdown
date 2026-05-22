@@ -1,10 +1,11 @@
-import type { MarkdownToken, RenderRule, RendererConfig } from './types';
+import type { MarkdownToken, RenderRule, RendererConfig, Extension } from './types';
 import { sanitizeHtml, escapeHtml } from './utils';
 
 export class MarkdownRenderer {
     private rules = new Map<string, RenderRule>();
     private warnings: string[] = [];
     private config: RendererConfig;
+    private extensions: Extension[] = [];
 
     constructor(config?: RendererConfig) {
         this.config = {
@@ -18,6 +19,10 @@ export class MarkdownRenderer {
 
     addRule(rule: RenderRule): void {
         this.rules.set(rule.type, rule);
+    }
+
+    addExtension(extension: Extension): void {
+        this.extensions.push(extension);
     }
 
     hasRule(type: string): boolean {
@@ -41,11 +46,35 @@ export class MarkdownRenderer {
 
         // Render each token using registered extensions
         const htmlParts = groupedTokens.map(token => this.renderToken(token));
-        const combinedHtml = htmlParts.join('');
+        let combinedHtml = htmlParts.join('');
 
-        // Apply sanitization if enabled
+        // Apply sanitization BEFORE post-processing
+        // This ensures post-processing hooks work on clean, safe HTML
         if (this.config.sanitize && !this.config.allowUnsafeHtml) {
-            return sanitizeHtml(combinedHtml);
+            combinedHtml = sanitizeHtml(combinedHtml);
+        }
+
+        // Apply post-processing hooks from extensions AFTER sanitization
+        // This allows extensions to add final HTML transformations on the sanitized output
+        for (const extension of this.extensions) {
+            if (extension.postProcessHtml) {
+                try {
+                    const processed = extension.postProcessHtml(combinedHtml);
+                    // Validate that post-processing returned a string
+                    if (typeof processed === 'string') {
+                        combinedHtml = processed;
+                    } else {
+                        this.warnings.push(`Post-processing hook in extension "${extension.name}" did not return a string`);
+                    }
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    this.warnings.push(`Post-processing error in extension "${extension.name}": ${errorMessage}`);
+                    // Continue with original HTML if post-processing fails
+                    if (this.config.debugMode) {
+                        console.error(`[Renderer] Post-processing failed for ${extension.name}:`, error);
+                    }
+                }
+            }
         }
 
         return combinedHtml;
