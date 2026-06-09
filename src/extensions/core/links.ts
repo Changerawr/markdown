@@ -7,6 +7,7 @@ export const LinkExtension: Extension = {
         {
             name: 'link',
             pattern: /\[(?!(?:button|embed):)([^\]]+)\]\(([^)]+)\)/,
+            recursiveContent: true,
             render: (match) => ({
                 type: 'link',
                 content: match[1] || '',
@@ -23,7 +24,7 @@ export const LinkExtension: Extension = {
             render: (token) => {
                 const href = token.attributes?.href || '#';
                 const escapedHref = escapeHtml(href);
-                const escapedText = escapeHtml(token.content);
+                const escapedText = (token.attributes?.renderedChildren as string) || escapeHtml(token.content);
                 const format = token.attributes?.format || 'html';
 
                 if (format === 'html') {

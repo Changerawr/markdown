@@ -383,22 +383,17 @@ export class ChangerawrMarkdown {
 
 // Factory functions for specific use cases
 export function createMinimalEngine(config?: EngineConfig): ChangerawrMarkdown {
-    // Create engine with NO default extensions
-    const minimalConfig = {
-        ...config,
-        extensions: config?.extensions || []
-    };
-
+    // Create engine with NO default extensions.
+    // Clear all defaults in one shot (single rebuildParserAndRenderer call) rather than
+    // N individual unregisterExtension calls (each triggers its own rebuild → O(n²)).
     const engine = new ChangerawrMarkdown();
 
-    // Clear all default extensions
-    const defaultExtensions = engine.getExtensions();
-    defaultExtensions.forEach(ext => engine.unregisterExtension(ext));
+    // Wipe the extension map, then rebuild once
+    engine['extensions'].clear();
+    engine['rebuildParserAndRenderer']();
 
-    // Only add the ones specified in config
-    if (minimalConfig.extensions) {
-        minimalConfig.extensions.forEach(ext => engine.registerExtension(ext));
-    }
+    // Register only the caller-specified extensions
+    (config?.extensions || []).forEach(ext => engine.registerExtension(ext));
 
     return engine;
 }

@@ -7,6 +7,7 @@ export const BoldExtension: Extension = {
         {
             name: 'bold',
             pattern: /\*\*((?:(?!\*\*).)+)\*\*/,
+            recursiveContent: true,
             render: (match) => ({
                 type: 'bold',
                 content: match[1] || '',
@@ -18,7 +19,7 @@ export const BoldExtension: Extension = {
         {
             type: 'bold',
             render: (token) => {
-                const content = escapeHtml(token.content);
+                const content = (token.attributes?.renderedChildren as string) || escapeHtml(token.content);
                 const format = token.attributes?.format;
 
                 if (format === 'html') {
@@ -37,6 +38,7 @@ export const ItalicExtension: Extension = {
         {
             name: 'italic',
             pattern: /\*((?:(?!\*).)+)\*/,
+            recursiveContent: true,
             render: (match) => ({
                 type: 'italic',
                 content: match[1] || '',
@@ -48,7 +50,7 @@ export const ItalicExtension: Extension = {
         {
             type: 'italic',
             render: (token) => {
-                const content = escapeHtml(token.content);
+                const content = (token.attributes?.renderedChildren as string) || escapeHtml(token.content);
                 const format = token.attributes?.format;
 
                 if (format === 'html') {

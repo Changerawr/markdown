@@ -59,7 +59,9 @@ export class MarkdownParser {
         let score = 100; // Base score
 
         // 1. Multi-line patterns get higher priority (more specific context)
-        const isMultiLine = /\\n|[\s\S]/.test(pattern);
+        // Check for actual multi-line markers in the regex source string:
+        // \\n = newline escape, [\s\S] or [\S\s] = any-char class used for cross-line matching
+        const isMultiLine = /\\n|\[\\s\\S\]|\[\\S\\s\]/.test(pattern);
         if (isMultiLine) {
             score += 500;
         }

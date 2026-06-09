@@ -7,6 +7,7 @@ export const StrikethroughExtension: Extension = {
         {
             name: 'strikethrough',
             pattern: /~~((?:(?!~~).)+)~~/,
+            recursiveContent: true,
             render: (match) => ({
                 type: 'strikethrough',
                 content: match[1] || '',
@@ -18,7 +19,7 @@ export const StrikethroughExtension: Extension = {
         {
             type: 'strikethrough',
             render: (token) => {
-                const content = escapeHtml(token.content);
+                const content = (token.attributes?.renderedChildren as string) || escapeHtml(token.content);
                 const format = token.attributes?.format;
 
                 if (format === 'html') {
