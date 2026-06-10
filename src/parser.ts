@@ -172,7 +172,19 @@ export class MarkdownParser {
         if (token.type === 'codeblock' || token.type === 'code') return token;
         const content = token.content;
         if (!content?.trim()) return token;
-        return { ...token, children: this.parseInlines(content) };
+
+        const isRecursive = token.attributes?.__recursiveContent === true;
+        const children = isRecursive
+            ? this.synthesizeAndInlineParse(this.parseBlocks(content))
+            : this.parseInlines(content);
+
+        if (!token.attributes || !('__recursiveContent' in token.attributes)) {
+            return { ...token, children };
+        }
+
+        const attributes = { ...token.attributes };
+        delete attributes.__recursiveContent;
+        return { ...token, attributes, children };
     }
 
     /**
@@ -232,6 +244,9 @@ export class MarkdownParser {
 
                 try {
                     const token = rule.render(match);
+                    if (rule.recursiveContent) {
+                        token.attributes = { ...token.attributes, __recursiveContent: true };
+                    }
                     tokens.push({ ...token, raw: match[0] || '' });
                     remaining = remaining.slice(match[0]?.length || 0);
                 } catch (error) {

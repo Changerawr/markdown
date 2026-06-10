@@ -11,6 +11,7 @@ export const AlertExtension: Extension = {
         {
             name: 'alert',
             scope: 'block',
+            recursiveContent: true,
             pattern: /:::(info|warning|error|success|tip|note)(?: ([^\n]+))?\n([\s\S]*?)\n:::/,
             render: (match: RegExpMatchArray) => {
                 return {

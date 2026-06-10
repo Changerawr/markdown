@@ -66,10 +66,11 @@ More **bold** text.
         expect((alertToken as any).children).toBeDefined();
         expect((alertToken as any).children.length).toBeGreaterThan(0);
 
-        // Verify the children are properly tokenized
-        const children = (alertToken as any).children;
-        expect(children.some((t: any) => t.type === 'bold')).toBe(true);
-        expect(children.some((t: any) => t.type === 'italic')).toBe(true);
+        // Content is wrapped in a paragraph, whose children are the tokenized inlines
+        const paragraph = (alertToken as any).children[0];
+        expect(paragraph.type).toBe('paragraph');
+        expect(paragraph.children.some((t: any) => t.type === 'bold')).toBe(true);
+        expect(paragraph.children.some((t: any) => t.type === 'italic')).toBe(true);
     });
 
     it('shows ideal token tree structure (what we should have)', () => {

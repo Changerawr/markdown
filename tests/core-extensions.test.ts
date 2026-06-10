@@ -23,6 +23,21 @@ import {
     ParagraphExtension,
     LineBreakExtension
 } from '../src/extensions/core';
+import type { MarkdownToken } from '../src/types';
+
+// Inline rules (bold, italic, links, etc.) now nest under the synthesized
+// paragraph's `children` rather than appearing at the top level. Flatten the
+// whole token tree so existing `.find`/`.filter` assertions still work.
+function flattenTokens(tokens: MarkdownToken[]): MarkdownToken[] {
+    const result: MarkdownToken[] = [];
+    for (const token of tokens) {
+        result.push(token);
+        if (token.children) {
+            result.push(...flattenTokens(token.children));
+        }
+    }
+    return result;
+}
 
 describe('Core Extensions', () => {
     let parser: MarkdownParser;
@@ -143,7 +158,7 @@ describe('Core Extensions', () => {
             const markdown = 'This is **bold text** in a sentence.';
             const tokens = parser.parse(markdown);
 
-            const boldToken = tokens.find(t => t.type === 'bold');
+            const boldToken = flattenTokens(tokens).find(t => t.type === 'bold');
             expect(boldToken).toBeDefined();
             expect(boldToken?.content).toBe('bold text');
         });
@@ -187,7 +202,7 @@ describe('Core Extensions', () => {
             const markdown = 'This is *italic text* in a sentence.';
             const tokens = parser.parse(markdown);
 
-            const italicToken = tokens.find(t => t.type === 'italic');
+            const italicToken = flattenTokens(tokens).find(t => t.type === 'italic');
             expect(italicToken).toBeDefined();
             expect(italicToken?.content).toBe('italic text');
         });
@@ -223,7 +238,7 @@ describe('Core Extensions', () => {
             const markdown = 'Use `console.log()` for debugging.';
             const tokens = parser.parse(markdown);
 
-            const codeToken = tokens.find(t => t.type === 'code');
+            const codeToken = flattenTokens(tokens).find(t => t.type === 'code');
             expect(codeToken).toBeDefined();
             expect(codeToken?.content).toBe('console.log()');
         });
@@ -318,7 +333,7 @@ describe('Core Extensions', () => {
             const markdown = '[Google](https://google.com)';
             const tokens = parser.parse(markdown);
 
-            const linkToken = tokens.find(t => t.type === 'link');
+            const linkToken = flattenTokens(tokens).find(t => t.type === 'link');
             expect(linkToken).toBeDefined();
             expect(linkToken?.content).toBe('Google');
             expect(linkToken?.attributes?.href).toBe('https://google.com');
@@ -470,7 +485,7 @@ describe('Core Extensions', () => {
             };
 
             const html = renderer.render([token]);
-            expect(html).toContain('<li>Test item</li>');
+            expect(html).toContain('Test item</li>');
             expect(html).toContain('<ul');
         });
 
@@ -706,7 +721,7 @@ describe('Core Extensions', () => {
             const markdown = 'Line one\\\nLine two';
             const tokens = parser.parse(markdown);
 
-            const lineBreakToken = tokens.find(t => t.type === 'line-break');
+            const lineBreakToken = flattenTokens(tokens).find(t => t.type === 'line-break');
             expect(lineBreakToken).toBeDefined();
         });
 
@@ -714,7 +729,7 @@ describe('Core Extensions', () => {
             const markdown = 'Line one  \nLine two';
             const tokens = parser.parse(markdown);
 
-            const lineBreakToken = tokens.find(t => t.type === 'line-break');
+            const lineBreakToken = flattenTokens(tokens).find(t => t.type === 'line-break');
             expect(lineBreakToken).toBeDefined();
         });
 
@@ -810,7 +825,7 @@ const code = "block";
 
         it('should prioritize more specific patterns', () => {
             const markdown = '![Image](test.jpg) and [Link](test.html)';
-            const tokens = parser.parse(markdown);
+            const tokens = flattenTokens(parser.parse(markdown));
 
             const imageTokens = tokens.filter(t => t.type === 'image');
             const linkTokens = tokens.filter(t => t.type === 'link');

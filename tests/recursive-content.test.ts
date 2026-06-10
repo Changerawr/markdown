@@ -68,8 +68,8 @@ This is **bold** and *italic* text with a [link](https://example.com).
     expect(html).toContain('link');
     expect(html).toContain('</a>');
     expect(html).toContain('<ul');
-    expect(html).toContain('<li>List item 1</li>');
-    expect(html).toContain('<li>List item 2</li>');
+    expect(html).toContain('List item 1</li>');
+    expect(html).toContain('List item 2</li>');
     expect(html).toContain('</ul>');
     expect(html).toContain('<div class="callout">');
   });

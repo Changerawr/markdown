@@ -13,6 +13,7 @@ export interface ParseRule {
     pattern: RegExp;
     render: (match: RegExpMatchArray) => MarkdownToken;
     scope?: 'block' | 'inline' | 'both';  // Block rules run in phase 1, inline rules in phase 2. Defaults to 'both' if unset.
+    recursiveContent?: boolean;  // Fully re-parse (block + inline) the captured content instead of just inline-parsing it.
     priority?: number;  // Optional explicit priority (higher = processed first). If not set, calculated automatically.
 }
 

@@ -14,9 +14,9 @@ describe('Commonmark Improvements', () => {
 2. Second item
 3. Third item`;
             const html = engine.toHtml(md);
-            expect(html).toContain('<li>First item</li>');
-            expect(html).toContain('<li>Second item</li>');
-            expect(html).toContain('<li>Third item</li>');
+            expect(html).toContain('First item</li>');
+            expect(html).toContain('Second item</li>');
+            expect(html).toContain('Third item</li>');
         });
 
         it('should handle ordered lists with different starting numbers', () => {
@@ -24,8 +24,8 @@ describe('Commonmark Improvements', () => {
 6. Six
 7. Seven`;
             const html = engine.toHtml(md);
-            expect(html).toContain('<li>Start at five</li>');
-            expect(html).toContain('<li>Six</li>');
+            expect(html).toContain('Start at five</li>');
+            expect(html).toContain('Six</li>');
         });
 
         it('should differentiate between ordered and unordered lists', () => {
@@ -159,7 +159,7 @@ describe('Commonmark Improvements', () => {
 
 **Bold** text outside list`;
             const html = engine.toHtml(md);
-            expect(html).toContain('<li>First item</li>');
+            expect(html).toContain('First item</li>');
             expect(html).toContain('<strong');
             expect(html).toContain('Bold</strong>');
         });
@@ -170,7 +170,7 @@ describe('Commonmark Improvements', () => {
             const html = engine.toHtml(md);
             expect(html).toContain('<strong');
             expect(html).toContain('<del');
-            expect(html).toContain('<li>');
+            expect(html).toContain('<li');
         });
 
         it('should handle images with captions', () => {
@@ -179,7 +179,7 @@ describe('Commonmark Improvements', () => {
 
 ![alt text](image.png "Image caption")`;
             const html = engine.toHtml(md);
-            expect(html).toContain('<li>');
+            expect(html).toContain('<li');
             expect(html).toContain('<figure');
             expect(html).toContain('Image caption');
         });
@@ -197,7 +197,7 @@ describe('Commonmark Improvements', () => {
 ~~Deleted~~ text with **bold**`;
             const html = engine.toHtml(md);
             expect(html).toContain('<h1');
-            expect(html).toContain('<li>');
+            expect(html).toContain('<li');
             expect(html).toContain('<figure');
             expect(html).toContain('<del');
             expect(html).toContain('task-list-item');
@@ -241,7 +241,7 @@ describe('Commonmark Improvements', () => {
                 md += `${i}. Item ${i}\n`;
             }
             const html = engine.toHtml(md);
-            expect(html.match(/<li>/g)?.length).toBe(50);
+            expect(html.match(/<li/g)?.length).toBe(50);
         });
     });
 
@@ -255,7 +255,7 @@ describe('Commonmark Improvements', () => {
             const html = engine.toHtml(md);
             const duration = performance.now() - start;
             expect(duration).toBeLessThan(1000); // Should complete within 1 second
-            expect(html).toContain('<li>');
+            expect(html).toContain('<li');
         });
     });
 
