@@ -6,8 +6,8 @@ export const StrikethroughExtension: Extension = {
     parseRules: [
         {
             name: 'strikethrough',
+            scope: 'inline',
             pattern: /~~((?:(?!~~).)+)~~/,
-            recursiveContent: true,
             render: (match) => ({
                 type: 'strikethrough',
                 content: match[1] || '',

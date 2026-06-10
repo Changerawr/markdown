@@ -275,16 +275,24 @@ export function createDebugEngine(config?: EngineConfig): ChangerawrMarkdown {
 }
 
 /**
- * Create an engine with only specified extensions (minimal setup)
+ * Create an engine with only specified extensions (minimal setup).
+ * Accepts either an array of extensions or a full EngineConfig object.
  */
-export function createMinimalEngine(extensions: Extension[] = []): ChangerawrMarkdown {
-    const engine = new ChangerawrMarkdown();
+export function createMinimalEngine(input?: Extension[] | EngineConfig): ChangerawrMarkdown {
+    const isArray = Array.isArray(input);
+    const extensions: Extension[] = isArray
+        ? (input as Extension[])
+        : ((input as EngineConfig | undefined)?.extensions || []);
+    const engineConfig: EngineConfig | undefined = isArray ? undefined : (input as EngineConfig | undefined);
 
-    // Clear all default extensions
-    const defaultExtensions = engine.getExtensions();
-    defaultExtensions.forEach(ext => engine.unregisterExtension(ext));
+    const subConfig: EngineConfig = {};
+    if (engineConfig?.parser) subConfig.parser = engineConfig.parser;
+    if (engineConfig?.renderer) subConfig.renderer = engineConfig.renderer;
+    const engine = new ChangerawrMarkdown(Object.keys(subConfig).length ? subConfig : undefined);
 
-    // Only add the ones specified
+    engine['extensions'].clear();
+    engine['rebuildParserAndRenderer']();
+
     extensions.forEach(ext => engine.registerExtension(ext));
 
     return engine;

@@ -6,6 +6,7 @@ export const BlockquoteExtension: Extension = {
     parseRules: [
         {
             name: 'blockquote',
+            scope: 'block',
             pattern: /^>\s+(.+)$/m,
             render: (match) => ({
                 type: 'blockquote',

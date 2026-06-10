@@ -6,6 +6,7 @@ export const HeadingExtension: Extension = {
     parseRules: [
         {
             name: 'heading',
+            scope: 'block',
             pattern: /^(#{1,6})\s+(.+)$/m,
             render: (match) => ({
                 type: 'heading',
@@ -24,7 +25,7 @@ export const HeadingExtension: Extension = {
                 const level = parseInt(token.attributes?.level || '1');
                 const text = token.content;
                 const id = generateId(text);
-                const escapedContent = escapeHtml(text);
+                const escapedContent = (token.attributes?.renderedChildren as string) || escapeHtml(text);
 
                 // Default to HTML format, extensions can override
                 const format = token.attributes?.format || 'html';

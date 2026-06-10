@@ -5,6 +5,7 @@ export const LineBreakExtension: Extension = {
     parseRules: [
         {
             name: 'hard-break-backslash',
+            scope: 'inline',
             pattern: /\\\s*\n/,
             render: (match) => ({
                 type: 'line-break',
@@ -14,6 +15,7 @@ export const LineBreakExtension: Extension = {
         },
         {
             name: 'hard-break-spaces',
+            scope: 'inline',
             pattern: /  +\n/,
             render: (match) => ({
                 type: 'line-break',

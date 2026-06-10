@@ -10,7 +10,7 @@ export const AlertExtension: Extension = {
     parseRules: [
         {
             name: 'alert',
-            // Only match specific alert types, not any word
+            scope: 'block',
             pattern: /:::(info|warning|error|success|tip|note)(?: ([^\n]+))?\n([\s\S]*?)\n:::/,
             render: (match: RegExpMatchArray) => {
                 return {
@@ -60,7 +60,7 @@ export const AlertExtension: Extension = {
                 };
 
                 const config = typeConfig[type] || typeConfig.info;
-                const baseClasses = 'border-l-4 p-4 mb-4 rounded-md transition-colors duration-200';
+                const baseClasses = 'border-l-4 p-4 my-4 rounded-md transition-colors duration-200';
                 const classes = `${baseClasses} ${config?.classes}`;
 
                 // Use pre-rendered children if available (new efficient approach)

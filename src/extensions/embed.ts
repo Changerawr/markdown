@@ -6,6 +6,7 @@ export const EmbedExtension: Extension = {
     parseRules: [
         {
             name: 'embed',
+            scope: 'block',
             pattern: /\[embed:(\w+)\]\(([^)]+)\)(?:\{([^}]+)\})?/,
             render: (match) => {
                 return {
@@ -36,7 +37,7 @@ export const EmbedExtension: Extension = {
 };
 
 function renderEmbed(provider: string, url: string, options: string): string {
-    const baseClasses = 'rounded-lg border bg-card text-card-foreground shadow-sm mb-6 overflow-hidden';
+    const baseClasses = 'rounded-lg border bg-card text-card-foreground shadow-sm my-6 overflow-hidden';
     const parsedOptions = parseOptions(options);
 
     switch (provider.toLowerCase()) {

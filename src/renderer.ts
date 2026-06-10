@@ -80,6 +80,16 @@ export class MarkdownRenderer {
         return combinedHtml;
     }
 
+    /** Render a token list without sanitization or post-processing hooks. Used for children. */
+    private renderTokens(tokens: MarkdownToken[]): string {
+        const tokensWithFormat = tokens.map(token => ({
+            ...token,
+            attributes: { ...token.attributes, format: this.config.format }
+        }));
+        const grouped = this.groupListItems(tokensWithFormat);
+        return grouped.map(token => this.renderToken(token)).join('');
+    }
+
     private groupListItems(tokens: MarkdownToken[]): MarkdownToken[] {
         const result: MarkdownToken[] = [];
         let i = 0;
@@ -138,11 +148,12 @@ export class MarkdownRenderer {
                 // If token has children, render them and inject into attributes
                 let tokenToRender = token;
                 if (token.children && token.children.length > 0) {
-                    // For wrapper tokens (ul, ol), render children directly without re-grouping
-                    // For other tokens with children, render through full pipeline to handle nested content
+                    // For wrapper tokens (ul, ol), render children directly without re-grouping.
+                    // For other tokens, use renderTokens (skips sanitization) so the top-level
+                    // render() call sanitizes only once rather than once per nesting level.
                     const renderedChildren = (token.type === 'ul' || token.type === 'ol')
                         ? token.children.map(child => this.renderToken(child)).join('')
-                        : this.render(token.children);
+                        : this.renderTokens(token.children);
 
                     tokenToRender = {
                         ...token,
@@ -164,6 +175,11 @@ export class MarkdownRenderer {
         // For unknown types in development, show debug info
         if (this.config.debugMode) {
             return this.createDebugBlock(token);
+        }
+
+        // If token has children but no render rule, render the children directly
+        if (token.children && token.children.length > 0) {
+            return this.renderTokens(token.children);
         }
 
         // Fallback: treat as text if no rule found

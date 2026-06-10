@@ -382,18 +382,34 @@ export class ChangerawrMarkdown {
 }
 
 // Factory functions for specific use cases
-export function createMinimalEngine(config?: EngineConfig): ChangerawrMarkdown {
-    // Create engine with NO default extensions.
-    // Clear all defaults in one shot (single rebuildParserAndRenderer call) rather than
-    // N individual unregisterExtension calls (each triggers its own rebuild → O(n²)).
-    const engine = new ChangerawrMarkdown();
 
-    // Wipe the extension map, then rebuild once
+/**
+ * Create an engine with no default extensions.
+ * Accepts either an array of extensions directly (common case) or a full EngineConfig.
+ *
+ * @example
+ * createMinimalEngine([BoldExtension, ItalicExtension])
+ * createMinimalEngine({ extensions: [BoldExtension], renderer: { format: 'html' } })
+ */
+export function createMinimalEngine(input?: Extension[] | EngineConfig): ChangerawrMarkdown {
+    const isArray = Array.isArray(input);
+    const extensions: Extension[] = isArray
+        ? (input as Extension[])
+        : ((input as EngineConfig | undefined)?.extensions || []);
+    const engineConfig: EngineConfig | undefined = isArray ? undefined : (input as EngineConfig | undefined);
+
+    // Build with parser/renderer config if provided, but skip default extension registration.
+    // We clear the defaults in one shot (single rebuildParserAndRenderer) rather than
+    // N individual unregisterExtension calls (each triggers its own rebuild → O(n²)).
+    const subConfig: EngineConfig = {};
+    if (engineConfig?.parser) subConfig.parser = engineConfig.parser;
+    if (engineConfig?.renderer) subConfig.renderer = engineConfig.renderer;
+    const engine = new ChangerawrMarkdown(Object.keys(subConfig).length ? subConfig : undefined);
+
     engine['extensions'].clear();
     engine['rebuildParserAndRenderer']();
 
-    // Register only the caller-specified extensions
-    (config?.extensions || []).forEach(ext => engine.registerExtension(ext));
+    extensions.forEach(ext => engine.registerExtension(ext));
 
     return engine;
 }

@@ -2,10 +2,10 @@
  * Utility functions for Changerawr Markdown
  */
 
-// Import DOMPurify with SSR safety
-let DOMPurify: { sanitize: (html: string, options?: Record<string, unknown>) => string } = {
-    sanitize: (html: string) => html
-};
+// Import DOMPurify with SSR safety.
+// Initialized as null so that sanitizeHtml falls back to basicSanitize
+// during the async load window rather than passing HTML through unsanitized.
+let DOMPurify: { sanitize: (html: string, options?: Record<string, unknown>) => string } | null = null;
 
 if (typeof window !== 'undefined') {
     import('dompurify').then(module => {
@@ -21,6 +21,10 @@ const ALLOWED_TAGS = [
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'del', 'ins',
     'a', 'img', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'table', 'thead',
     'tbody', 'tr', 'th', 'td', 'div', 'span', 'sup', 'sub', 'hr', 'input',
+    // Inline semantics used by extensions
+    'mark', 'abbr', 'kbd', 'samp', 'var', 'cite', 'q', 's', 'u', 'small',
+    // Interactive / details
+    'details', 'summary',
     // Embeds
     'iframe', 'embed', 'object', 'param', 'video', 'audio', 'source',
     // SVG
@@ -85,8 +89,8 @@ export function sanitizeHtml(html: string): string {
             return html;
         }
 
-        // Use DOMPurify if available
-        if (typeof DOMPurify?.sanitize === 'function') {
+        // Use DOMPurify if it has finished loading
+        if (DOMPurify !== null) {
             const sanitized = DOMPurify.sanitize(html, {
                 ALLOWED_TAGS,
                 ALLOWED_ATTR,

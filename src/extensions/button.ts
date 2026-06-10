@@ -5,6 +5,7 @@ export const ButtonExtension: Extension = {
     parseRules: [
         {
             name: 'button',
+            scope: 'block',
             pattern: /\[button:([^\]]+)\]\(([^)]+)\)(?:\{([^}]+)\})?/,
             render: (match) => {
                 const options = match[3] ? match[3].split(',').map(opt => opt.trim()) : [];

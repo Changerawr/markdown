@@ -6,6 +6,7 @@ export const ImageExtension: Extension = {
     parseRules: [
         {
             name: 'image',
+            scope: 'block',
             pattern: /!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]+)")?\)/,
             render: (match) => ({
                 type: 'image',

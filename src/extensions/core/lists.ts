@@ -6,6 +6,7 @@ export const ListExtension: Extension = {
     parseRules: [
         {
             name: 'unordered-list-item',
+            scope: 'block',
             pattern: /^(\s*)[-*+]\s+(.+)$/m,
             render: (match) => ({
                 type: 'list-item',
@@ -20,6 +21,7 @@ export const ListExtension: Extension = {
         },
         {
             name: 'ordered-list-item',
+            scope: 'block',
             pattern: /^(\s*)(\d+)\.\s+(.+)$/m,
             render: (match) => ({
                 type: 'ordered-list-item',
@@ -41,9 +43,9 @@ export const ListExtension: Extension = {
                 const content = token.attributes?.renderedChildren || '';
 
                 if (format === 'html') {
-                    return `<ul style="margin: 8px 0; padding-left: 24px; list-style: disc;">${content}</ul>`;
+                    return `<ul style="margin: 16px 0; padding-left: 24px; list-style: disc;">${content}</ul>`;
                 }
-                return `<ul class="my-2 pl-6 list-disc">${content}</ul>`;
+                return `<ul class="my-4 pl-6 list-disc space-y-1">${content}</ul>`;
             }
         },
         {
@@ -53,9 +55,9 @@ export const ListExtension: Extension = {
                 const content = token.attributes?.renderedChildren || '';
 
                 if (format === 'html') {
-                    return `<ol style="margin: 8px 0; padding-left: 24px; list-style: decimal;">${content}</ol>`;
+                    return `<ol style="margin: 16px 0; padding-left: 24px; list-style: decimal;">${content}</ol>`;
                 }
-                return `<ol class="my-2 pl-6 list-decimal">${content}</ol>`;
+                return `<ol class="my-4 pl-6 list-decimal space-y-1">${content}</ol>`;
             }
         },
         {
@@ -66,10 +68,9 @@ export const ListExtension: Extension = {
                 const content = token.attributes?.renderedChildren || escapeHtml(token.content);
 
                 if (format === 'html') {
-                    return `<li>${content}</li>`;
+                    return `<li style="line-height: 1.6;">${content}</li>`;
                 }
-                // Default to Tailwind
-                return `<li>${content}</li>`;
+                return `<li class="leading-relaxed">${content}</li>`;
             }
         },
         {
@@ -79,9 +80,9 @@ export const ListExtension: Extension = {
                 const content = token.attributes?.renderedChildren || escapeHtml(token.content);
 
                 if (format === 'html') {
-                    return `<li>${content}</li>`;
+                    return `<li style="line-height: 1.6;">${content}</li>`;
                 }
-                return `<li>${content}</li>`;
+                return `<li class="leading-relaxed">${content}</li>`;
             }
         }
     ]
@@ -92,6 +93,7 @@ export const TaskListExtension: Extension = {
     parseRules: [
         {
             name: 'task-item',
+            scope: 'block',
             pattern: /^(\s*)-\s*\[([ xX])\]\s*(.+)$/m,
             render: (match) => ({
                 type: 'task-item',

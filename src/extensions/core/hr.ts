@@ -5,6 +5,7 @@ export const HorizontalRuleExtension: Extension = {
     parseRules: [
         {
             name: 'hr',
+            scope: 'block',
             pattern: /^---$/m,
             render: (match) => ({
                 type: 'hr',

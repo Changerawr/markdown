@@ -6,8 +6,8 @@ export const LinkExtension: Extension = {
     parseRules: [
         {
             name: 'link',
+            scope: 'inline',
             pattern: /\[(?!(?:button|embed):)([^\]]+)\]\(([^)]+)\)/,
-            recursiveContent: true,
             render: (match) => ({
                 type: 'link',
                 content: match[1] || '',

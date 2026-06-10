@@ -8,18 +8,16 @@ export const ParagraphExtension: Extension = {
         {
             type: 'paragraph',
             render: (token) => {
-                if (!token.content) return '';
-                const content = token.content.trim();
-                if (!content) return '';
+                const content = (token.attributes?.renderedChildren as string) || escapeHtml(token.content || '');
+                if (!content.trim()) return '';
 
-                const processedContent = content.includes('<br>') ? content : escapeHtml(content);
                 const format = token.attributes?.format || 'html';
 
                 if (format === 'html') {
-                    return `<p style="line-height: 1.75; margin-bottom: 16px;">${processedContent}</p>`;
+                    return `<p style="line-height: 1.75; margin-bottom: 16px;">${content}</p>`;
                 }
 
-                return `<p class="leading-7 mb-4">${processedContent}</p>`;
+                return `<p class="leading-7 mb-4">${content}</p>`;
             }
         }
     ]

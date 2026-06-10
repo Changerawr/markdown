@@ -6,6 +6,7 @@ export const InlineCodeExtension: Extension = {
     parseRules: [
         {
             name: 'code',
+            scope: 'inline',
             pattern: /`([^`]+)`/,
             render: (match) => ({
                 type: 'code',
@@ -36,6 +37,7 @@ export const CodeBlockExtension: Extension = {
     parseRules: [
         {
             name: 'codeblock',
+            scope: 'block',
             pattern: /```(\w+)?\s*\n([\s\S]*?)\n```/,
             render: (match) => ({
                 type: 'codeblock',

@@ -6,8 +6,8 @@ export const BoldExtension: Extension = {
     parseRules: [
         {
             name: 'bold',
+            scope: 'inline',
             pattern: /\*\*((?:(?!\*\*).)+)\*\*/,
-            recursiveContent: true,
             render: (match) => ({
                 type: 'bold',
                 content: match[1] || '',
@@ -37,8 +37,8 @@ export const ItalicExtension: Extension = {
     parseRules: [
         {
             name: 'italic',
+            scope: 'inline',
             pattern: /\*((?:(?!\*).)+)\*/,
-            recursiveContent: true,
             render: (match) => ({
                 type: 'italic',
                 content: match[1] || '',
