@@ -90,47 +90,39 @@ export class MarkdownRenderer {
         return grouped.map(token => this.renderToken(token)).join('');
     }
 
+    private static isListItemToken(token?: MarkdownToken): boolean {
+        return token?.type === 'list-item' || token?.type === 'ordered-list-item' || token?.type === 'task-item';
+    }
+
+    private static isSameListType(typeA: string, typeB: string): boolean {
+        const isOrderedA = typeA === 'ordered-list-item';
+        const isOrderedB = typeB === 'ordered-list-item';
+        return isOrderedA === isOrderedB;
+    }
+
     private groupListItems(tokens: MarkdownToken[]): MarkdownToken[] {
         const result: MarkdownToken[] = [];
         let i = 0;
 
         while (i < tokens.length) {
             const token = tokens[i]!;
-            const isListItem = token?.type === 'list-item' || token?.type === 'ordered-list-item' || token?.type === 'task-item';
 
-            if (isListItem) {
-                // Collect all consecutive list items at this level
-                const listItems: MarkdownToken[] = [];
-                const firstItemType = token.type;
-                const isOrdered = firstItemType === 'ordered-list-item';
+            if (MarkdownRenderer.isListItemToken(token)) {
+                const indent = (token.attributes?.indent as number) ?? 0;
+                const { items, nextIndex } = this.collectListLevel(tokens, i, indent);
+                const isOrdered = token.type === 'ordered-list-item';
 
-                while (i < tokens.length) {
-                    const item = tokens[i];
-                    if (!item) break;
-
-                    const itemType = item.type;
-                    const isSameListType = (isOrdered && itemType === 'ordered-list-item') ||
-                                          (!isOrdered && (itemType === 'list-item' || itemType === 'task-item'));
-
-                    if (isSameListType) {
-                        listItems.push(item);
-                        i++;
-                    } else {
-                        break;
-                    }
-                }
-
-                // Wrap list items in ul or ol (only happens once per grouping call)
                 const wrappedList: MarkdownToken = {
                     type: isOrdered ? 'ol' : 'ul',
                     content: '',
                     raw: '',
-                    children: listItems,
+                    children: items,
                     attributes: { format: this.config.format }
                 };
                 // Mark as already wrapped to prevent double-wrapping
                 (wrappedList as any)._isWrapped = true;
                 result.push(wrappedList);
+                i = nextIndex;
             } else {
                 result.push(token);
                 i++;
@@ -138,6 +130,53 @@ export class MarkdownRenderer {
         }
 
         return result;
+    }
+
+    /**
+     * Collect consecutive list items at `indentLevel`. Items with greater indent are
+     * recursively grouped into a nested ul/ol and appended to the preceding item's
+     * children, producing a properly nested list tree.
+     */
+    private collectListLevel(tokens: MarkdownToken[], start: number, indentLevel: number): { items: MarkdownToken[]; nextIndex: number } {
+        const items: MarkdownToken[] = [];
+        let i = start;
+        let currentType: string | null = null;
+
+        while (i < tokens.length) {
+            const item = tokens[i];
+            if (!item || !MarkdownRenderer.isListItemToken(item)) break;
+
+            const itemIndent = (item.attributes?.indent as number) ?? 0;
+
+            if (itemIndent < indentLevel) break;
+
+            if (itemIndent > indentLevel && items.length > 0) {
+                const nested = this.collectListLevel(tokens, i, itemIndent);
+                const isNestedOrdered = item.type === 'ordered-list-item';
+                const nestedList: MarkdownToken = {
+                    type: isNestedOrdered ? 'ol' : 'ul',
+                    content: '',
+                    raw: '',
+                    children: nested.items,
+                    attributes: { format: this.config.format }
+                };
+                (nestedList as any)._isWrapped = true;
+
+                const lastItem = items[items.length - 1]!;
+                lastItem.children = [...(lastItem.children || []), nestedList];
+
+                i = nested.nextIndex;
+                continue;
+            }
+
+            if (currentType !== null && !MarkdownRenderer.isSameListType(currentType, item.type)) break;
+
+            currentType = item.type;
+            items.push(item);
+            i++;
+        }
+
+        return { items, nextIndex: i };
     }
 
     private renderToken(token: MarkdownToken): string {

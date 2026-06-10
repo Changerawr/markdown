@@ -7,7 +7,7 @@ export const ListExtension: Extension = {
         {
             name: 'unordered-list-item',
             scope: 'block',
-            pattern: /^(\s*)[-*+]\s+(.+)$/m,
+            pattern: /^([ \t]*)[-*+]\s+(.+)$/m,
             render: (match) => ({
                 type: 'list-item',
                 content: match[2] || '',
@@ -22,7 +22,7 @@ export const ListExtension: Extension = {
         {
             name: 'ordered-list-item',
             scope: 'block',
-            pattern: /^(\s*)(\d+)\.\s+(.+)$/m,
+            pattern: /^([ \t]*)(\d+)\.\s+(.+)$/m,
             render: (match) => ({
                 type: 'ordered-list-item',
                 content: match[3] || '',
@@ -94,7 +94,7 @@ export const TaskListExtension: Extension = {
         {
             name: 'task-item',
             scope: 'block',
-            pattern: /^(\s*)-\s*\[([ xX])\]\s*(.+)$/m,
+            pattern: /^([ \t]*)-\s*\[([ xX])\]\s*(.+)$/m,
             render: (match) => ({
                 type: 'task-item',
                 content: match[3] || '',
